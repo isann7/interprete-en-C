@@ -107,7 +107,7 @@ int Evaluar_expresion(Nodo* nodo, TablaSimbolos* t) {
             return nodo->valor.entero;
         case NODO_IDEN: {
             Simbolo s = Obtener_simbolo(t, nodo->valor.iden);
-            return s.valor;
+            return s.valor.entero;
         }
         case NODO_BINARIO: {
             int izq = Evaluar_expresion(nodo->valor.binario.izq, t);
@@ -139,15 +139,28 @@ void Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t) {
     if (nodo == NULL) return;
     switch (nodo->tipo) {
         case NODO_ASIGNAR: {
+            if(nodo->valor.asignacion.Nodo_asignado->tipo == NODO_STRING){
+              Guardar_simbolo(t, nodo->valor.asignacion.nombre, 1, 0, nodo->valor.asignacion.Nodo_asignado->valor.str);
+              break;
+            } 
             int result = Evaluar_expresion(nodo->valor.asignacion.Nodo_asignado, t);
-            Guardar_simbolo(t, nodo->valor.asignacion.nombre, result);
+            Guardar_simbolo(t, nodo->valor.asignacion.nombre, 0, result, "");
             break;
         }
         case NODO_PRINT: { 
-           if(nodo->valor.print->tipo == NODO_STRING){
-             printf("%s\n", nodo->valor.print->valor.str);
-             break;
-           } 
+            if(nodo->valor.print->tipo == NODO_STRING){
+              printf("%s\n", nodo->valor.print->valor.str);
+              break;
+            }
+
+            if(nodo->valor.print->tipo == NODO_IDEN){
+              Simbolo s = Obtener_simbolo(t, nodo->valor.print->valor.iden);
+              if(s.es_str){
+                printf("%s\n", s.valor.texto);
+                break;
+              }
+            }
+
             int result = Evaluar_expresion(nodo->valor.print, t);
             printf("%d\n", result);
             break;

@@ -28,13 +28,25 @@ Simbolo Obtener_simbolo(TablaSimbolos* t, char* nombre) {
     return t->tabla[idx];
 }
 
-void Guardar_simbolo(TablaSimbolos* t, char* nombre, int valor) {
+void Guardar_simbolo(TablaSimbolos* t, char* nombre, int tipo, int entero, char* texto) {
     int idx = Existe_simbolo(t, nombre);
     if (idx == -1) {
         strcpy(t->tabla[t->cantidad].nombre, nombre); 
-        t->tabla[t->cantidad].valor = valor;
+        if(!tipo){
+          t->tabla[t->cantidad].valor.entero = entero;        
+        }
+        else{
+          strcpy(t->tabla[t->cantidad].valor.texto, texto);
+        } 
+        t->tabla[t->cantidad].es_str = tipo;
         t->cantidad++;
     } else {
-        t->tabla[idx].valor = valor;
-    }
+        if(!tipo){
+          t->tabla[idx].valor.entero = entero;
+        }
+        else{
+          strcpy(t->tabla[idx].valor.texto, texto);
+        }
+        t->tabla[idx].es_str = tipo;
+    } 
 }

@@ -3,7 +3,11 @@
 
 typedef struct {
     char nombre[50];
-    int valor;
+    int es_str;
+    union {
+      char texto[256];  
+      int entero;
+    }valor; 
 } Simbolo;
 
 typedef struct {
@@ -14,7 +18,7 @@ typedef struct {
 void Tabla_init(TablaSimbolos* t);
 int Existe_simbolo(TablaSimbolos* t, char* nombre);
 Simbolo Obtener_simbolo(TablaSimbolos* t, char* nombre);
-void Guardar_simbolo(TablaSimbolos* t, char* nombre, int valor);
+void Guardar_simbolo(TablaSimbolos* t, char* nombre, int tipo, int entero, char* texto);
 
 #endif 
 
