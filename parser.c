@@ -59,6 +59,12 @@ Nodo* Parser_factor(Parser* par){
       nodo = Parser_comparacion(par);
       Parser_consumir(par, TOKEN_RPAR);
       break;}
+    case TOKEN_STRING:{
+      char texto[256];
+      strcpy(texto, par->token_actual.valor.frase);
+      Parser_consumir(par, TOKEN_STRING);
+      nodo = Crear_nodo_string(texto);
+      break;}
   }
   return nodo;
 }
@@ -132,6 +138,9 @@ Nodo* Parser_instruccion(Parser* par){
       Nodo* bloque = Parser_bloque(par);
       nodo = Crear_nodo_if_while(condicion, bloque, tipo_actual);
       break;}
+    default:
+      printf("Error de sintaxis: token inesperado o instrucción no válida\n");
+      exit(1);
   }
   return nodo;
 }

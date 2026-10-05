@@ -57,6 +57,13 @@ Nodo* Crear_nodo_if_while(Nodo* cond, Nodo* rama_verd, int tipo) {
     return nodo;
 }
 
+Nodo* Crear_nodo_string(char* nombre){
+  Nodo* nodo = malloc(sizeof(Nodo));
+  nodo->tipo = NODO_STRING;
+  strcpy(nodo->valor.str, nombre);
+  return nodo;
+}
+
 void Imprimir_ast(Nodo* nodo) {
     if (nodo == NULL) return;
     switch (nodo->tipo) {
@@ -136,7 +143,11 @@ void Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t) {
             Guardar_simbolo(t, nodo->valor.asignacion.nombre, result);
             break;
         }
-        case NODO_PRINT: {
+        case NODO_PRINT: { 
+           if(nodo->valor.print->tipo == NODO_STRING){
+             printf("%s\n", nodo->valor.print->valor.str);
+             break;
+           } 
             int result = Evaluar_expresion(nodo->valor.print, t);
             printf("%d\n", result);
             break;

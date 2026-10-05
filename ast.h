@@ -13,7 +13,7 @@ typedef struct {
 } Binario;
 
 typedef enum {
-    NODO_ASIGNAR, NODO_PRINT, NODO_NUM, NODO_IDEN, NODO_BINARIO, NODO_IF, NODO_BLOQUE, NODO_WHILE
+    NODO_ASIGNAR, NODO_PRINT, NODO_NUM, NODO_IDEN, NODO_BINARIO, NODO_IF, NODO_BLOQUE, NODO_WHILE, NODO_STRING 
 } Tipo_nodo;
 
 typedef struct Nodo {
@@ -22,6 +22,7 @@ typedef struct Nodo {
         int entero;
         struct Nodo* print;
         char iden[50];
+        char str[256];
         struct {
             char nombre[50];
             struct Nodo* Nodo_asignado;
@@ -45,6 +46,7 @@ Nodo* Crear_nodo_iden(char* nombre);
 Nodo* Crear_nodo_binario(Tipo_binario b, Nodo* izquierda, Nodo* derecha);
 Nodo* Crear_nodo_bloque(void);
 Nodo* Crear_nodo_if_while(Nodo* cond, Nodo* rama_verd, int tipo);
+Nodo* Crear_nodo_string(char* nombre);
 int Evaluar_expresion(Nodo* nodo, TablaSimbolos* t);
 void Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t);
 

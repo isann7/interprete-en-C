@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include "token.h"
@@ -29,7 +30,7 @@ Token Obtener_token(Lexer* lex) {
         return t;
     }
 
-    if(!(isdigit(lex->char_actual)) && !(isalpha(lex->char_actual))){
+    if(!(isdigit(lex->char_actual)) && !(isalpha(lex->char_actual)) && lex->char_actual != '"'){
         switch (lex->char_actual) {
             case '+': t.tipo = TOKEN_MAS; Lexer_avanzar(lex); break;
             case '-': t.tipo = TOKEN_MENOS; Lexer_avanzar(lex); break;
@@ -66,14 +67,26 @@ Token Obtener_token(Lexer* lex) {
         t.valor.entero = n;
     }
     else {
-        char nombre[50];
+        char nombre[256];
         int i = 0;
-        while(isalnum(lex->char_actual)){
+        int str = 0;
+        if(lex->char_actual == '"'){Lexer_avanzar(lex); str++;}
+        while( (lex->char_actual != '"' && lex->char_actual != '\0' && lex->char_actual != '\n' && str) || (isalnum(lex->char_actual) && !str) ){
             nombre[i] = lex->char_actual;
             i++;
             Lexer_avanzar(lex);
-        }
-        nombre[i] = '\0';
+        } 
+        if(lex->char_actual == '"'){
+          Lexer_avanzar(lex); 
+        } 
+        else if(str){
+          printf("Error: cadena sin cerrar\n");
+          exit(3);
+    }
+
+    nombre[i] = '\0';
+
+    if(!str){
         if(!strcmp("VAR", nombre)){ t.tipo = TOKEN_VAR; }
         else if(!strcmp("FUNC", nombre)){ t.tipo = TOKEN_FUNC; }
         else if(!strcmp("PRINT", nombre)){ t.tipo = TOKEN_PRINT; }
@@ -83,7 +96,11 @@ Token Obtener_token(Lexer* lex) {
             t.tipo = TOKEN_IDEN;
             strcpy(t.valor.frase, nombre);
         }
-    }
+    } else {
+        t.tipo = TOKEN_STRING;
+        strcpy(t.valor.frase, nombre);
+    } 
+   }
     return t;
 }
 
@@ -112,6 +129,7 @@ void Print_token(int t) {
         case TOKEN_MAYOR_IGUAL: printf("token_mayor_igual"); break;
         case TOKEN_MENOR_IGUAL: printf("token_menor_igual"); break;
         case TOKEN_WHILE:       printf("token_while"); break;
+        case TOKEN_STRING:      printf("token_string"); break;
         default:                printf("token_desconocido"); break;
     }
     printf("\n");
