@@ -1,4 +1,19 @@
-VAR x : "Hola, Mundo!";
-PRINT x;
-VAR x : 3;
-PRINT x;
+PRINT "CONJETURA DE COLLATZ";
+PRINT "Inserta un numero mayor a 1: ";
+VAR n : INPUT;
+VAR pasos : 0;
+
+WHILE(n > 1){
+  PRINT n;
+
+  IF (~(n%2)){
+    VAR n : n/2;
+  } IFNOT {
+    VAR n : (n*3)+1;
+  }
+
+  VAR pasos : pasos + 1;
+}
+
+PRINT "1 alcanzado, pasos totales:";
+PRINT pasos;

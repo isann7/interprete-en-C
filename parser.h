@@ -19,6 +19,8 @@ Nodo* Parser_termino(Parser* par);
 Nodo* Parser_expresion(Parser* par);
 Nodo* Parser_bloque(Parser* par);
 Nodo* Parser_comparacion(Parser* par);
+Nodo* Parser_logico_and(Parser* par);
+Nodo* Parser_logico_or(Parser* par);
 Nodo* Parser_instruccion(Parser* par);
 
 #endif

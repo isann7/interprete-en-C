@@ -56,7 +56,7 @@ Nodo* Parser_factor(Parser* par){
       break;}
     case TOKEN_LPAR:{
       Parser_consumir(par, TOKEN_LPAR);
-      nodo = Parser_comparacion(par);
+      nodo = Parser_logico_or(par);
       Parser_consumir(par, TOKEN_RPAR);
       break;}
     case TOKEN_STRING:{
@@ -65,14 +65,28 @@ Nodo* Parser_factor(Parser* par){
       Parser_consumir(par, TOKEN_STRING);
       nodo = Crear_nodo_string(texto);
       break;}
+    case TOKEN_NOT:{
+      Parser_consumir(par, TOKEN_NOT);
+      Nodo* exp = Parser_factor(par);
+      nodo = Crear_nodo_not(exp);
+      break;}
+    case TOKEN_INPUT:{
+      Parser_consumir(par, TOKEN_INPUT);
+      nodo = Crear_nodo_input();
+      break;}
   }
   return nodo;
 }
 
 Nodo* Parser_termino(Parser* par){
   Nodo* izq = Parser_factor(par);
-  while(par->token_actual.tipo == TOKEN_MUL || par->token_actual.tipo == TOKEN_DIV){
-    Tipo_binario op = (par->token_actual.tipo == TOKEN_MUL ? OP_MUL : OP_DIV);
+  while(par->token_actual.tipo == TOKEN_MUL || par->token_actual.tipo == TOKEN_DIV || par->token_actual.tipo == TOKEN_RESTO){
+    Tipo_binario op;
+    switch ((int) par->token_actual.tipo) {
+      case TOKEN_MUL: op = OP_MUL; break;
+      case TOKEN_DIV: op = OP_DIV; break;
+      case TOKEN_RESTO: op = OP_RESTO; break;
+    }
     Parser_avanzar(par);
     Nodo* der = Parser_factor(par);
     izq = Crear_nodo_binario(op, izq, der);
@@ -111,6 +125,27 @@ Nodo* Parser_comparacion(Parser* par){
   return izq;
 }
 
+Nodo* Parser_logico_and(Parser* par){
+  Nodo* izq = Parser_comparacion(par);
+  while(par->token_actual.tipo == TOKEN_AND){
+    Parser_avanzar(par);
+    Nodo* der = Parser_comparacion(par);
+    izq = Crear_nodo_binario(OP_AND, izq, der);
+  }
+  return izq;
+}
+
+Nodo* Parser_logico_or(Parser* par){
+  Nodo* izq = Parser_logico_and(par);
+  while(par->token_actual.tipo == TOKEN_OR || par->token_actual.tipo == TOKEN_XOR){
+    Tipo_binario op = par->token_actual.tipo == TOKEN_OR ? OP_OR : OP_XOR;
+    Parser_avanzar(par); 
+    Nodo* der = Parser_logico_and(par);
+    izq = Crear_nodo_binario(op, izq, der);
+  }
+  return izq;
+}
+
 Nodo* Parser_instruccion(Parser* par){
   Nodo* nodo; 
   switch ((int) par->token_actual.tipo) {
@@ -120,13 +155,13 @@ Nodo* Parser_instruccion(Parser* par){
       strcpy(nombre, par->token_actual.valor.frase);
       Parser_consumir(par, TOKEN_IDEN);
       Parser_consumir(par, TOKEN_ASIGNAR);
-      Nodo* exp = Parser_comparacion(par);
+      Nodo* exp = Parser_logico_or(par);
       Parser_consumir(par, TOKEN_PUNCOMA);
       nodo = Crear_nodo_asig(nombre, exp);
       break;}
     case TOKEN_PRINT:{
       Parser_consumir(par, TOKEN_PRINT);
-      Nodo* exp = Parser_comparacion(par);
+      Nodo* exp = Parser_logico_or(par);
       Parser_consumir(par, TOKEN_PUNCOMA);
       nodo = Crear_nodo_print(exp);
       break;} 
@@ -134,10 +169,15 @@ Nodo* Parser_instruccion(Parser* par){
     case TOKEN_WHILE:{
       int tipo_actual = (par->token_actual.tipo == TOKEN_IF ? 0 : 1);
       Parser_consumir(par, par->token_actual.tipo == TOKEN_IF ? TOKEN_IF : TOKEN_WHILE);
-      Nodo* condicion = Parser_comparacion(par);
-      Nodo* bloque = Parser_bloque(par);
-      nodo = Crear_nodo_if_while(condicion, bloque, tipo_actual);
-      break;}
+      Nodo* condicion = Parser_logico_or(par);
+      Nodo* bloque_verdadero = Parser_bloque(par);
+      Nodo* bloque_falso = NULL;      
+      if(tipo_actual == 0 && par->token_actual.tipo == TOKEN_IFNOT){ 
+        Parser_consumir(par, TOKEN_IFNOT);
+        bloque_falso = Parser_bloque(par);
+      } 
+      nodo = Crear_nodo_if_while(condicion, bloque_verdadero, bloque_falso, tipo_actual);
+      break;}   
     default:
       printf("Error de sintaxis: token inesperado o instrucción no válida\n");
       exit(1);

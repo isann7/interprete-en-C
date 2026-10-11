@@ -49,11 +49,17 @@ Nodo* Crear_nodo_bloque(void) {
     return nodo;
 }
 
-Nodo* Crear_nodo_if_while(Nodo* cond, Nodo* rama_verd, int tipo) {
+Nodo* Crear_nodo_if_while(Nodo* cond, Nodo* rama_verd, Nodo* rama_falsa, int tipo) {
     Nodo* nodo = malloc(sizeof(Nodo));
-    nodo->tipo = (tipo == 0 ? NODO_IF : NODO_WHILE);
+    Tipo_nodo t;
+    switch (tipo) {
+      case 0: t = NODO_IF; break;
+      case 1: t = NODO_WHILE; break;
+    }
+    nodo->tipo = t;
     nodo->valor.condicional.condicion = cond;
     nodo->valor.condicional.rama_verdadera = rama_verd;
+    nodo->valor.condicional.rama_falsa = rama_falsa;
     return nodo;
 }
 
@@ -61,6 +67,19 @@ Nodo* Crear_nodo_string(char* nombre){
   Nodo* nodo = malloc(sizeof(Nodo));
   nodo->tipo = NODO_STRING;
   strcpy(nodo->valor.str, nombre);
+  return nodo;
+}
+
+Nodo* Crear_nodo_not(Nodo* expresion){
+  Nodo* nodo = malloc(sizeof(Nodo));
+  nodo->tipo = NODO_NOT;
+  nodo->valor.not = expresion;
+  return nodo;
+}
+
+Nodo* Crear_nodo_input(){
+  Nodo* nodo = malloc(sizeof(Nodo));
+  nodo->tipo = NODO_INPUT;
   return nodo;
 }
 
@@ -119,15 +138,29 @@ int Evaluar_expresion(Nodo* nodo, TablaSimbolos* t) {
                 case OP_DIV:   
                     if (der == 0) { printf("Error: división por cero\n"); exit(1); }
                     return izq / der;
+                case OP_RESTO:        return izq % der;
                 case OP_MENOR:        return izq < der;
                 case OP_MAYOR:        return izq > der;
                 case OP_IGUAL:        return izq == der;
                 case OP_MENOR_IGUAL:  return izq <= der;
                 case OP_MAYOR_IGUAL:  return izq >= der;
+                case OP_AND:          return izq && der;
+                case OP_OR:           return izq || der;
+                case OP_XOR:          return izq ^ der;
                 default: break;
             }
             break;
         }
+        case NODO_NOT:{
+          int valor = Evaluar_expresion(nodo->valor.not, t);
+          return !valor;
+          break;}
+        case NODO_INPUT:{
+          int valor;
+          printf(">> ");
+          scanf("%d", &valor);
+          return valor;
+                        }
         default:
             printf("tipo de nodo no valido en expresion\n");
             exit(1);
@@ -175,14 +208,17 @@ void Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t) {
             if (Evaluar_expresion(nodo->valor.condicional.condicion, t)) {
                 Evaluar_instruccion(nodo->valor.condicional.rama_verdadera, t);
             }
+            else if(nodo->valor.condicional.rama_falsa != NULL){
+              Evaluar_instruccion(nodo->valor.condicional.rama_falsa, t);
+            }
             break;
-        }
+        } 
         case NODO_WHILE: {
             while (Evaluar_expresion(nodo->valor.condicional.condicion, t)) {
                 Evaluar_instruccion(nodo->valor.condicional.rama_verdadera, t);
             }
             break;
-        }
+        } 
         default: break;
     }
 }

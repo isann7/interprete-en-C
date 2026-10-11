@@ -30,12 +30,13 @@ Token Obtener_token(Lexer* lex) {
         return t;
     }
 
-    if(!(isdigit(lex->char_actual)) && !(isalpha(lex->char_actual)) && lex->char_actual != '"'){
+    if(!(isdigit(lex->char_actual)) && !(isalpha(lex->char_actual)) && lex->char_actual != '"' && lex->char_actual != '_'){
         switch (lex->char_actual) {
             case '+': t.tipo = TOKEN_MAS; Lexer_avanzar(lex); break;
             case '-': t.tipo = TOKEN_MENOS; Lexer_avanzar(lex); break;
             case '*': t.tipo = TOKEN_MUL; Lexer_avanzar(lex); break;
             case '/': t.tipo = TOKEN_DIV; Lexer_avanzar(lex); break;
+            case '%': t.tipo = TOKEN_RESTO; Lexer_avanzar(lex); break;
             case '(': t.tipo = TOKEN_LPAR; Lexer_avanzar(lex); break;
             case ')': t.tipo = TOKEN_RPAR; Lexer_avanzar(lex); break;
             case '{': t.tipo = TOKEN_L_LLAV; Lexer_avanzar(lex); break;
@@ -52,8 +53,22 @@ Token Obtener_token(Lexer* lex) {
                 if(lex->char_actual == '='){ t.tipo = TOKEN_MAYOR_IGUAL; Lexer_avanzar(lex); }
                 else{ t.tipo = TOKEN_MAYOR; }
                 break;
-            case '=': t.tipo = TOKEN_IGUAL; Lexer_avanzar(lex); break;
+            case '=':{
+              Lexer_avanzar(lex);
+              if(lex->char_actual == '='){
+                printf("Error: Sintaxis comparación: =, asignación: :");
+                exit(1);
+              }
+              else{
+                t.tipo = TOKEN_IGUAL;
+                break;
+              }
+                     }
             default: Lexer_avanzar(lex); break;
+            case '&': t.tipo = TOKEN_AND; Lexer_avanzar(lex); break;
+            case '|': t.tipo = TOKEN_OR; Lexer_avanzar(lex); break;
+            case '^': t.tipo = TOKEN_XOR; Lexer_avanzar(lex); break;
+            case '~': t.tipo = TOKEN_NOT; Lexer_avanzar(lex); break;
         }
     }
     else if((isdigit(lex->char_actual))) {
@@ -71,7 +86,7 @@ Token Obtener_token(Lexer* lex) {
         int i = 0;
         int str = 0;
         if(lex->char_actual == '"'){Lexer_avanzar(lex); str++;}
-        while( (lex->char_actual != '"' && lex->char_actual != '\0' && lex->char_actual != '\n' && str) || (isalnum(lex->char_actual) && !str) ){
+        while( (lex->char_actual != '"' && lex->char_actual != '\0' && lex->char_actual != '\n' && str) || ((isalnum(lex->char_actual) || lex->char_actual == '_') && !str) ){
             nombre[i] = lex->char_actual;
             i++;
             Lexer_avanzar(lex);
@@ -91,7 +106,9 @@ Token Obtener_token(Lexer* lex) {
         else if(!strcmp("FUNC", nombre)){ t.tipo = TOKEN_FUNC; }
         else if(!strcmp("PRINT", nombre)){ t.tipo = TOKEN_PRINT; }
         else if(!strcmp("IF", nombre)){ t.tipo = TOKEN_IF; }
+        else if(!strcmp("IFNOT", nombre)){ t.tipo = TOKEN_IFNOT; }
         else if(!strcmp("WHILE", nombre)){ t.tipo = TOKEN_WHILE; }
+        else if(!strcmp("INPUT", nombre)){ t.tipo = TOKEN_INPUT; }
         else {
             t.tipo = TOKEN_IDEN;
             strcpy(t.valor.frase, nombre);
@@ -130,6 +147,10 @@ void Print_token(int t) {
         case TOKEN_MENOR_IGUAL: printf("token_menor_igual"); break;
         case TOKEN_WHILE:       printf("token_while"); break;
         case TOKEN_STRING:      printf("token_string"); break;
+        case TOKEN_AND:         printf("token_and"); break;
+        case TOKEN_OR:          printf("token_or"); break;
+        case TOKEN_XOR:         printf("token_xor"); break;
+        case TOKEN_NOT:         printf("token_not"); break;
         default:                printf("token_desconocido"); break;
     }
     printf("\n");
