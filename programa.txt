@@ -1,19 +1,51 @@
-PRINT "CONJETURA DE COLLATZ";
-PRINT "Inserta un numero mayor a 1: ";
-VAR n : INPUT;
-VAR pasos : 0;
+PRINT "=== LA PRUEBA DEFINITIVA ===";
 
-WHILE(n > 1){
-  PRINT n;
+FUNC comprobar_primo(numero)(es_primo) {
+    VAR es_primo : 1; 
+    VAR i : 2;
 
-  IF (~(n%2)){
-    VAR n : n/2;
-  } IFNOT {
-    VAR n : (n*3)+1;
-  }
+    IF (numero < 2) {
+        VAR es_primo : 0;
+        FINISH;
+    }
 
-  VAR pasos : pasos + 1;
+    WHILE (i < numero) {
+        IF (~(numero % i)) {
+            VAR es_primo : 0;
+            FINISH; 
+        }
+        VAR i : i + 1;
+    }
 }
 
-PRINT "1 alcanzado, pasos totales:";
-PRINT pasos;
+FUNC calcular_potencia(base, exponente)(resultado) {
+    VAR resultado : 1;
+    VAR iteracion : 0;
+    
+    WHILE (iteracion < exponente) {
+        VAR resultado : resultado * base;
+        VAR iteracion : iteracion + 1;
+    }
+}
+
+PRINT "Dime un numero entero positivo:";
+VAR num_usuario : INPUT;
+
+VAR resultado_primo : comprobar_primo(num_usuario);
+
+IF (resultado_primo) {
+    PRINT "Increible, es un numero primo!";
+    PRINT "Vamos a elevarlo al cuadrado:";
+    VAR cuadrado : calcular_potencia(num_usuario, 2);
+    PRINT cuadrado;
+} IFNOT {
+    PRINT "Vaya, no es un numero primo.";
+    
+    IF (~(num_usuario % 2) & (num_usuario > 10)) {
+        PRINT "Pero al menos es par y mayor que 10!";
+    } IFNOT {
+        PRINT "Y tampoco es par y mayor que 10 a la vez.";
+    }
+}
+
+PRINT "=== FIN DEL PROGRAMA ===";

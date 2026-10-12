@@ -77,9 +77,39 @@ Nodo* Crear_nodo_not(Nodo* expresion){
   return nodo;
 }
 
-Nodo* Crear_nodo_input(){
+Nodo* Crear_nodo_input(void){
   Nodo* nodo = malloc(sizeof(Nodo));
   nodo->tipo = NODO_INPUT;
+  return nodo;
+}
+
+Nodo* Crear_nodo_func_def(char* nombre, char param[][50], char param_salida[50], int num_param, Nodo* bloque){
+  Nodo* nodo = malloc(sizeof(Nodo));
+  nodo->tipo = NODO_FUNC_DEF;
+  strcpy(nodo->valor.func_def.nombre, nombre);
+  for (unsigned int i = 0; i < num_param; i++) {
+    strcpy(nodo->valor.func_def.param[i], param[i]);
+  } 
+  strcpy(nodo->valor.func_def.param_salida, param_salida);
+  nodo->valor.func_def.num_param = num_param;
+  nodo->valor.func_def.bloque = bloque;
+  return nodo;
+}
+
+Nodo* Crear_nodo_func_call(char* nombre, Nodo** args, int num_args){
+  Nodo* nodo = malloc(sizeof(Nodo));
+  nodo->tipo = NODO_FUNC_CALL;
+  strcpy(nodo->valor.func_call.nombre, nombre);
+  for(unsigned int i = 0; i < num_args; i++){
+    nodo->valor.func_call.args[i] = args[i];
+  }
+  nodo->valor.func_call.num_args = num_args;
+  return nodo;
+}
+
+Nodo* Crear_nodo_finish(void){
+  Nodo* nodo = malloc(sizeof(Nodo));
+  nodo->tipo = NODO_FINISH;
   return nodo;
 }
 
@@ -119,7 +149,7 @@ void Imprimir_ast(Nodo* nodo) {
 }
 
 
-int Evaluar_expresion(Nodo* nodo, TablaSimbolos* t) {
+int Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
     if (nodo == NULL) return 0;
     switch (nodo->tipo) {
         case NODO_NUM:
@@ -129,8 +159,8 @@ int Evaluar_expresion(Nodo* nodo, TablaSimbolos* t) {
             return s.valor.entero;
         }
         case NODO_BINARIO: {
-            int izq = Evaluar_expresion(nodo->valor.binario.izq, t);
-            int der = Evaluar_expresion(nodo->valor.binario.der, t);
+            int izq = Evaluar_expresion(nodo->valor.binario.izq, t, tf);
+            int der = Evaluar_expresion(nodo->valor.binario.der, t, tf);
             switch (nodo->valor.binario.tipo) {
                 case OP_SUMA:         return izq + der;
                 case OP_RESTA:        return izq - der;
@@ -152,15 +182,30 @@ int Evaluar_expresion(Nodo* nodo, TablaSimbolos* t) {
             break;
         }
         case NODO_NOT:{
-          int valor = Evaluar_expresion(nodo->valor.not, t);
+          int valor = Evaluar_expresion(nodo->valor.not, t, tf);
           return !valor;
           break;}
         case NODO_INPUT:{
           int valor;
           printf(">> ");
           scanf("%d", &valor);
-          return valor;
-                        }
+          return valor;} 
+        case NODO_FUNC_CALL:{
+          Func f = Obtener_func(tf, nodo->valor.func_call.nombre);
+          Nodo* func_def = f.func_def;
+          int i = 0;
+          TablaSimbolos ttemp;
+          Tabla_init(&ttemp);
+          Guardar_simbolo(&ttemp, func_def->valor.func_def.param_salida, 0, 0, "");
+          while(i < nodo->valor.func_call.num_args){
+            int valor = Evaluar_expresion(nodo->valor.func_call.args[i], t, tf);
+            Guardar_simbolo(&ttemp, func_def->valor.func_def.param[i], 0, valor, "");
+            i++;
+          }
+          Evaluar_instruccion(func_def->valor.func_def.bloque, &ttemp, tf); 
+          Simbolo s = Obtener_simbolo(&ttemp, func_def->valor.func_def.param_salida);
+          return s.valor.entero;
+          break;}
         default:
             printf("tipo de nodo no valido en expresion\n");
             exit(1);
@@ -168,15 +213,15 @@ int Evaluar_expresion(Nodo* nodo, TablaSimbolos* t) {
     return 0;
 }
 
-void Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t) {
-    if (nodo == NULL) return;
+int Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
+    if (nodo == NULL) return 1;
     switch (nodo->tipo) {
         case NODO_ASIGNAR: {
             if(nodo->valor.asignacion.Nodo_asignado->tipo == NODO_STRING){
               Guardar_simbolo(t, nodo->valor.asignacion.nombre, 1, 0, nodo->valor.asignacion.Nodo_asignado->valor.str);
               break;
             } 
-            int result = Evaluar_expresion(nodo->valor.asignacion.Nodo_asignado, t);
+            int result = Evaluar_expresion(nodo->valor.asignacion.Nodo_asignado, t, tf);
             Guardar_simbolo(t, nodo->valor.asignacion.nombre, 0, result, "");
             break;
         }
@@ -194,31 +239,40 @@ void Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t) {
               }
             }
 
-            int result = Evaluar_expresion(nodo->valor.print, t);
+            int result = Evaluar_expresion(nodo->valor.print, t, tf);
             printf("%d\n", result);
             break;
         }
         case NODO_BLOQUE: {
             for (int i = 0; i < nodo->valor.bloque.cantidad; i++) {
-                Evaluar_instruccion(nodo->valor.bloque.instrucciones[i], t);
+               int j = Evaluar_instruccion(nodo->valor.bloque.instrucciones[i], t, tf);
+               if(!j){ return 0; }
             }
             break;
         }
         case NODO_IF: {
-            if (Evaluar_expresion(nodo->valor.condicional.condicion, t)) {
-                Evaluar_instruccion(nodo->valor.condicional.rama_verdadera, t);
+            if (Evaluar_expresion(nodo->valor.condicional.condicion, t, tf)) {
+               int i = Evaluar_instruccion(nodo->valor.condicional.rama_verdadera, t, tf);
+               if(!i){ return 0; }
             }
             else if(nodo->valor.condicional.rama_falsa != NULL){
-              Evaluar_instruccion(nodo->valor.condicional.rama_falsa, t);
+              int i = Evaluar_instruccion(nodo->valor.condicional.rama_falsa, t, tf);
+              if(!i){ return 0; }
             }
             break;
         } 
         case NODO_WHILE: {
-            while (Evaluar_expresion(nodo->valor.condicional.condicion, t)) {
-                Evaluar_instruccion(nodo->valor.condicional.rama_verdadera, t);
+            while (Evaluar_expresion(nodo->valor.condicional.condicion, t, tf)) {
+               int i = Evaluar_instruccion(nodo->valor.condicional.rama_verdadera, t, tf);
+               if(!i){ return 0; }
             }
             break;
         } 
+        case NODO_FUNC_DEF:{
+          Guardar_func(tf, nodo->valor.func_def.nombre, nodo);
+          break;} 
+        case NODO_FINISH:{ return 0; }
         default: break;
     }
+    return 1;
 }

@@ -5,6 +5,7 @@
 #include "ast.h"
 #include "tabla_simbolos.h"
 #include "parser.h"
+#include "tabla_funciones.h"
 
 
 char* Leer_archivo(const char* ruta) {
@@ -36,8 +37,9 @@ char* Leer_archivo(const char* ruta) {
 
 int main() {
     TablaSimbolos memoria;
+    TablaFunciones funciones;
     Tabla_init(&memoria);
-
+    Tabla_func_init(&funciones);
     
     char* codigo_fuente = Leer_archivo("programa.txt");
 
@@ -51,7 +53,7 @@ int main() {
     
     while (par.token_actual.tipo != TOKEN_EOF) {
         Nodo* ast = Parser_instruccion(&par);
-        Evaluar_instruccion(ast, &memoria);
+        Evaluar_instruccion(ast, &memoria, &funciones);
     }
 
     

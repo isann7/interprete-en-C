@@ -1,6 +1,7 @@
 #ifndef AST_H
 #define AST_H
 #include "tabla_simbolos.h"
+#include "tabla_funciones.h"
  
 typedef enum {
     OP_SUMA, OP_RESTA, OP_MUL, OP_DIV, OP_RESTO, OP_MAYOR, OP_MENOR, OP_MAYOR_IGUAL, OP_MENOR_IGUAL, OP_IGUAL, OP_AND, OP_OR, OP_XOR, OP_NOT
@@ -13,7 +14,8 @@ typedef struct {
 } Binario;
 
 typedef enum {
-    NODO_ASIGNAR, NODO_PRINT, NODO_NUM, NODO_IDEN, NODO_BINARIO, NODO_IF, NODO_BLOQUE, NODO_WHILE, NODO_STRING, NODO_NOT, NODO_INPUT 
+    NODO_ASIGNAR, NODO_PRINT, NODO_NUM, NODO_IDEN, NODO_BINARIO, NODO_IF, NODO_BLOQUE, NODO_WHILE, NODO_STRING, NODO_NOT, NODO_INPUT, NODO_FUNC_DEF, 
+    NODO_FUNC_CALL, NODO_FINISH
 } Tipo_nodo;
 
 typedef struct Nodo {
@@ -39,6 +41,19 @@ typedef struct Nodo {
         } bloque;
         struct Nodo* not;
         struct Nodo* input;
+        struct{
+            char nombre[50];
+            char param[10][50];
+            char param_salida[50];
+            int num_param;
+            struct Nodo* bloque;
+        }func_def;
+        struct{
+           char nombre[50];
+           struct Nodo* args[10];
+           int num_args; 
+        }func_call;
+        struct Nodo* finish;
     } valor;
 } Nodo;
 
@@ -51,9 +66,12 @@ Nodo* Crear_nodo_bloque(void);
 Nodo* Crear_nodo_if_while(Nodo* cond, Nodo* rama_verd, Nodo* rama_falsa, int tipo);
 Nodo* Crear_nodo_string(char* nombre);
 Nodo* Crear_nodo_not(Nodo* expresion);
-Nodo* Crear_nodo_input();
-int Evaluar_expresion(Nodo* nodo, TablaSimbolos* t);
-void Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t);
+Nodo* Crear_nodo_input(void);
+Nodo* Crear_nodo_func_def(char* nombre, char param[][50], char param_salida[50], int num_param, Nodo* bloque);
+Nodo* Crear_nodo_func_call(char* nombre, Nodo** args, int num_args);
+Nodo* Crear_nodo_finish(void);
+int Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf);
+int Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf);
 
 void Imprimir_ast(Nodo* nodo);
 
