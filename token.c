@@ -41,6 +41,8 @@ Token Obtener_token(Lexer* lex) {
             case ')': t.tipo = TOKEN_RPAR; Lexer_avanzar(lex); break;
             case '{': t.tipo = TOKEN_L_LLAV; Lexer_avanzar(lex); break;
             case '}': t.tipo = TOKEN_R_LLAV; Lexer_avanzar(lex); break;
+            case '[': t.tipo = TOKEN_L_CORCHETE; Lexer_avanzar(lex); break;
+            case ']': t.tipo = TOKEN_R_CORCHETE; Lexer_avanzar(lex); break;
             case ';': t.tipo = TOKEN_PUNCOMA; Lexer_avanzar(lex); break;
             case ':': t.tipo = TOKEN_ASIGNAR; Lexer_avanzar(lex); break;
             case ',': t.tipo = TOKEN_COMA; Lexer_avanzar(lex); break;
@@ -154,6 +156,8 @@ void Print_token(int t) {
         case TOKEN_OR:          printf("token_or"); break;
         case TOKEN_XOR:         printf("token_xor"); break;
         case TOKEN_NOT:         printf("token_not"); break;
+        case TOKEN_R_CORCHETE:  printf("token_r_corchete"); break;
+        case TOKEN_L_CORCHETE:  printf("token_l_corchete"); break;
         default:                printf("token_desconocido"); break;
     }
     printf("\n");

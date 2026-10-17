@@ -41,7 +41,7 @@ int main() {
     Tabla_init(&memoria);
     Tabla_func_init(&funciones);
     
-    char* codigo_fuente = Leer_archivo("programa.txt");
+    char* codigo_fuente = Leer_archivo("programa.izan");
 
     
     Parser par;
@@ -54,6 +54,7 @@ int main() {
     while (par.token_actual.tipo != TOKEN_EOF) {
         Nodo* ast = Parser_instruccion(&par);
         Evaluar_instruccion(ast, &memoria, &funciones);
+        //Imprimir_ast(ast);
     }
 
     

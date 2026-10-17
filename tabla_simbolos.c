@@ -28,25 +28,35 @@ Simbolo Obtener_simbolo(TablaSimbolos* t, char* nombre) {
     return t->tabla[idx];
 }
 
-void Guardar_simbolo(TablaSimbolos* t, char* nombre, int tipo, int entero, char* texto) {
+void Guardar_simbolo(TablaSimbolos* t, char* nombre, Contenido valor, Tipo_simbolo tipo) {
     int idx = Existe_simbolo(t, nombre);
     if (idx == -1) {
         strcpy(t->tabla[t->cantidad].nombre, nombre); 
-        if(!tipo){
-          t->tabla[t->cantidad].valor.entero = entero;        
+        switch ((int) tipo) {
+          case ENTERO:
+              t->tabla[t->cantidad].valor.entero = valor.entero;
+              break;
+          case STRING: 
+              strcpy(t->tabla[t->cantidad].valor.texto, valor.texto);
+              break;
+          case ARRAY:
+              t->tabla[t->cantidad].valor.array = valor.array;
+              break;
         }
-        else{
-          strcpy(t->tabla[t->cantidad].valor.texto, texto);
-        } 
-        t->tabla[t->cantidad].es_str = tipo;
+        t->tabla[t->cantidad].tipo = tipo;
         t->cantidad++;
     } else {
-        if(!tipo){
-          t->tabla[idx].valor.entero = entero;
+        switch ((int) tipo) {
+          case ENTERO:
+              t->tabla[idx].valor.entero = valor.entero;
+              break;
+          case STRING:
+              strcpy(t->tabla[idx].valor.texto, valor.texto);
+              break;
+          case ARRAY:
+              t->tabla[idx].valor.array = valor.array;
+              break;
         }
-        else{
-          strcpy(t->tabla[idx].valor.texto, texto);
-        }
-        t->tabla[idx].es_str = tipo;
+        t->tabla[idx].tipo = tipo;
     } 
 }

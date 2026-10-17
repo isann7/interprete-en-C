@@ -15,7 +15,7 @@ typedef struct {
 
 typedef enum {
     NODO_ASIGNAR, NODO_PRINT, NODO_NUM, NODO_IDEN, NODO_BINARIO, NODO_IF, NODO_BLOQUE, NODO_WHILE, NODO_STRING, NODO_NOT, NODO_INPUT, NODO_FUNC_DEF, 
-    NODO_FUNC_CALL, NODO_FINISH
+    NODO_FUNC_CALL, NODO_FINISH, NODO_ARRAY_INIT, NODO_ARRAY_ACCESO
 } Tipo_nodo;
 
 typedef struct Nodo {
@@ -54,8 +54,22 @@ typedef struct Nodo {
            int num_args; 
         }func_call;
         struct Nodo* finish;
+        struct{
+          struct Nodo** elementos;
+          int cantidad;
+          int capacidad;
+        }array_init;
+        struct{
+          char nombre[50];
+          struct Nodo* indice;
+        }array_acceso;
     } valor;
 } Nodo;
+
+typedef struct{
+  Tipo_simbolo tipo;
+  Contenido valor;
+}Evaluador;
 
 Nodo* Crear_nodo_num(int num);
 Nodo* Crear_nodo_asig(char* nombre, Nodo* expresion);
@@ -70,8 +84,10 @@ Nodo* Crear_nodo_input(void);
 Nodo* Crear_nodo_func_def(char* nombre, char param[][50], char param_salida[50], int num_param, Nodo* bloque);
 Nodo* Crear_nodo_func_call(char* nombre, Nodo** args, int num_args);
 Nodo* Crear_nodo_finish(void);
-int Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf);
-int Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf);
+Nodo* Crear_nodo_array_init(Nodo** n, int cantidad, int capacidad);
+Nodo* Crear_nodo_array_acceso(char* nombre, Nodo* indice);
+Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf);
+Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf);
 
 void Imprimir_ast(Nodo* nodo);
 

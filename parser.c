@@ -50,7 +50,7 @@ Nodo* Parser_factor(Parser* par){
       break;}
     case TOKEN_IDEN:{
       char nombre[50];
-      strcpy(nombre, par->token_actual.valor.frase);
+      strcpy(nombre, par->token_actual.valor.frase); 
       Parser_consumir(par, TOKEN_IDEN);
       if(par->token_actual.tipo == TOKEN_LPAR){ 
         Parser_consumir(par, TOKEN_LPAR); 
@@ -66,11 +66,35 @@ Nodo* Parser_factor(Parser* par){
         Parser_consumir(par, TOKEN_RPAR);  
         nodo = Crear_nodo_func_call(nombre, argumentos, i);
       }
+      else if(par->token_actual.tipo == TOKEN_L_CORCHETE){
+        Parser_consumir(par, TOKEN_L_CORCHETE);
+        Nodo* indice = Parser_logico_or(par);
+        Parser_consumir(par, TOKEN_R_CORCHETE);
+        nodo = Crear_nodo_array_acceso(nombre, indice);
+      }
       else{  
         nodo = Crear_nodo_iden(nombre);
       }
       break;
     } 
+    case TOKEN_L_CORCHETE:{
+        Parser_consumir(par, TOKEN_L_CORCHETE); 
+        int capacidad = 10;
+        int cantidad = 0;
+        Nodo** n = malloc(sizeof(Nodo*) * capacidad);
+        while(par->token_actual.tipo != TOKEN_R_CORCHETE){
+          if(cantidad == capacidad){
+            capacidad *= 2;
+            n = realloc(n, sizeof(Nodo*) * capacidad);
+          }
+          if(par->token_actual.tipo == TOKEN_COMA){
+            Parser_consumir(par, TOKEN_COMA);
+          }
+          n[cantidad++] = Parser_logico_or(par);
+        }
+        Parser_consumir(par, TOKEN_R_CORCHETE);
+        nodo = Crear_nodo_array_init(n, cantidad, capacidad);
+        break;}
     case TOKEN_LPAR:{
       Parser_consumir(par, TOKEN_LPAR);
       nodo = Parser_logico_or(par);
@@ -220,8 +244,10 @@ Nodo* Parser_instruccion(Parser* par){
         char param_salida[50];
         Parser_consumir(par, TOKEN_RPAR);
         Parser_consumir(par, TOKEN_LPAR);
-        strcpy(param_salida, par->token_actual.valor.frase);
-        Parser_consumir(par, TOKEN_IDEN);
+        if(par->token_actual.tipo == TOKEN_IDEN){
+          strcpy(param_salida, par->token_actual.valor.frase);
+          Parser_consumir(par, TOKEN_IDEN);
+        } 
         Parser_consumir(par, TOKEN_RPAR);
         Nodo* bloque = Parser_bloque(par);
         nodo = Crear_nodo_func_def(nombre, param, param_salida, i, bloque);
@@ -231,8 +257,13 @@ Nodo* Parser_instruccion(Parser* par){
         Parser_consumir(par, TOKEN_PUNCOMA);
         nodo = Crear_nodo_finish();
         break;}
+    case TOKEN_IDEN:{
+        nodo = Parser_factor(par);
+        Parser_consumir(par, TOKEN_PUNCOMA);
+        break;}
     default:
       printf("Error de sintaxis: token inesperado o instrucción no válida\n");
+      Print_token(par->token_actual.tipo);
       exit(1);
   }
   return nodo;

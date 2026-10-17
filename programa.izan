@@ -1,0 +1,3 @@
+
+VAR lista : [10, 20, 30 + 5];
+PRINT lista[2];
