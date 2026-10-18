@@ -10,11 +10,12 @@ Nodo* Crear_nodo_num(int num) {
     return nodo;
 }
 
-Nodo* Crear_nodo_asig(char* nombre, Nodo* expresion) {
+Nodo* Crear_nodo_asig(char* nombre, Nodo* expresion, Nodo* indice) {
     Nodo* nodo = malloc(sizeof(Nodo));
     nodo->tipo = NODO_ASIGNAR;
     strcpy(nodo->valor.asignacion.nombre, nombre);
     nodo->valor.asignacion.Nodo_asignado = expresion;
+    nodo->valor.asignacion.indice = indice;
     return nodo;
 }
 
@@ -279,14 +280,23 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
           Evaluador ev_t = Evaluar_instruccion(func_def->valor.func_def.bloque, &ttemp, tf); 
           Simbolo s = Obtener_simbolo(&ttemp, func_def->valor.func_def.param_salida);
           ev.tipo = s.tipo;
-          ev.valor.entero = s.valor.entero;
+          ev.valor = s.valor;
           break;}
         case NODO_STRING:{
           ev.tipo = STRING;
           strcpy(ev.valor.texto, nodo->valor.str);
           break;}
         case NODO_ARRAY_INIT:{
-          ev.valor.array = nodo->valor.array_init.elementos;
+          Nodo** elementos_evaluados = malloc(nodo->valor.array_init.capacidad * sizeof(Nodo*));
+          for (int i = 0; i < nodo->valor.array_init.cantidad; i++) {
+            Evaluador ev_elem = Evaluar_expresion(nodo->valor.array_init.elementos[i], t, tf);
+            if (ev_elem.tipo == ENTERO) {
+                elementos_evaluados[i] = Crear_nodo_num(ev_elem.valor.entero);
+             } else if (ev_elem.tipo == STRING) {
+                 elementos_evaluados[i] = Crear_nodo_string(ev_elem.valor.texto);               
+             }
+            }
+          ev.valor.array = elementos_evaluados;
           ev.tipo = ARRAY;
           break;}
         case NODO_ARRAY_ACCESO:{ 
@@ -322,7 +332,22 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
     switch (nodo->tipo) {
         case NODO_ASIGNAR: {
             Evaluador ev_t = Evaluar_expresion(nodo->valor.asignacion.Nodo_asignado, t, tf);
-            Guardar_simbolo(t, nodo->valor.asignacion.nombre, ev_t.valor, ev_t.tipo);
+            if(nodo->valor.asignacion.indice == NULL){
+              Guardar_simbolo(t, nodo->valor.asignacion.nombre, ev_t.valor, ev_t.tipo);  
+            }
+            else{
+              Simbolo s = Obtener_simbolo(t, nodo->valor.asignacion.nombre);
+              if(s.tipo == ARRAY){
+                Evaluador ev_indice = Evaluar_expresion(nodo->valor.asignacion.indice, t, tf);  
+                switch ((int) ev_t.tipo) {
+                  case ENTERO:
+                    s.valor.array[ev_indice.valor.entero] = Crear_nodo_num(ev_t.valor.entero);
+                    break;
+                  case STRING:
+                    s.valor.array[ev_indice.valor.entero] = Crear_nodo_string(ev_t.valor.texto);
+                } 
+              }
+            }
             break;
         }
         case NODO_PRINT: { 

@@ -193,12 +193,18 @@ Nodo* Parser_instruccion(Parser* par){
     case TOKEN_VAR:{
       Parser_consumir(par, TOKEN_VAR);
       char nombre[50];
+      Nodo* indice = NULL;
       strcpy(nombre, par->token_actual.valor.frase);
       Parser_consumir(par, TOKEN_IDEN);
+      if(par->token_actual.tipo == TOKEN_L_CORCHETE){
+        Parser_consumir(par, TOKEN_L_CORCHETE);
+        indice = Parser_logico_or(par);
+        Parser_consumir(par, TOKEN_R_CORCHETE);
+      }
       Parser_consumir(par, TOKEN_ASIGNAR);
       Nodo* exp = Parser_logico_or(par);
       Parser_consumir(par, TOKEN_PUNCOMA);
-      nodo = Crear_nodo_asig(nombre, exp);
+      nodo = Crear_nodo_asig(nombre, exp, indice);
       break;}
     case TOKEN_PRINT:{
       Parser_consumir(par, TOKEN_PRINT);

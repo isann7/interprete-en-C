@@ -27,6 +27,7 @@ typedef struct Nodo {
         char str[256];
         struct {
             char nombre[50];
+            struct Nodo* indice;
             struct Nodo* Nodo_asignado;
         } asignacion;
         Binario binario;
@@ -72,7 +73,7 @@ typedef struct{
 }Evaluador;
 
 Nodo* Crear_nodo_num(int num);
-Nodo* Crear_nodo_asig(char* nombre, Nodo* expresion);
+Nodo* Crear_nodo_asig(char* nombre, Nodo* expresion, Nodo* indice);
 Nodo* Crear_nodo_print(Nodo* n);
 Nodo* Crear_nodo_iden(char* nombre);
 Nodo* Crear_nodo_binario(Tipo_binario b, Nodo* izquierda, Nodo* derecha);

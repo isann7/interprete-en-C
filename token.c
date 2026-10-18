@@ -46,6 +46,11 @@ Token Obtener_token(Lexer* lex) {
             case ';': t.tipo = TOKEN_PUNCOMA; Lexer_avanzar(lex); break;
             case ':': t.tipo = TOKEN_ASIGNAR; Lexer_avanzar(lex); break;
             case ',': t.tipo = TOKEN_COMA; Lexer_avanzar(lex); break;
+            case '#':{
+                while(lex->char_actual != '\n' && lex->char_actual != '\0'){
+                  Lexer_avanzar(lex);      
+                }
+                return Obtener_token(lex);}
             case '<':
                 Lexer_avanzar(lex);
                 if(lex->char_actual == '='){ t.tipo = TOKEN_MENOR_IGUAL; Lexer_avanzar(lex); }
