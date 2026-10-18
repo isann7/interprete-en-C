@@ -60,3 +60,14 @@ void Guardar_simbolo(TablaSimbolos* t, char* nombre, Contenido valor, Tipo_simbo
         t->tabla[idx].tipo = tipo;
     } 
 }
+
+
+
+Simbolo* Obtener_simbolo_ptr(TablaSimbolos* t, char* nombre){
+  int idx = Existe_simbolo(t, nombre);
+  if(idx == -1){
+    printf("error, no existe el simbolo %s\n", nombre);
+    exit(1);
+  }
+  return &(t->tabla[idx]);
+}

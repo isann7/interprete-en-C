@@ -296,7 +296,9 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                  elementos_evaluados[i] = Crear_nodo_string(ev_elem.valor.texto);               
              }
             }
-          ev.valor.array = elementos_evaluados;
+          ev.valor.array.elementos = elementos_evaluados;
+          ev.valor.array.cantidad = nodo->valor.array_init.cantidad;
+          ev.valor.array.capacidad = nodo->valor.array_init.capacidad;
           ev.tipo = ARRAY;
           break;}
         case NODO_ARRAY_ACCESO:{ 
@@ -311,7 +313,10 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                 exit(1);
             }
             int idx = indice.valor.entero;
-            Nodo* elemento = s.valor.array[idx];
+            Nodo* elemento = s.valor.array.elementos[idx];
+            if(idx >= s.valor.array.cantidad){
+              s.valor.array.cantidad = idx;
+            }
             ev = Evaluar_expresion(elemento, t, tf);
             break;}
         default:
@@ -336,16 +341,22 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
               Guardar_simbolo(t, nodo->valor.asignacion.nombre, ev_t.valor, ev_t.tipo);  
             }
             else{
-              Simbolo s = Obtener_simbolo(t, nodo->valor.asignacion.nombre);
-              if(s.tipo == ARRAY){
+              Simbolo* s = Obtener_simbolo_ptr(t, nodo->valor.asignacion.nombre);
+              if(s->tipo == ARRAY){
                 Evaluador ev_indice = Evaluar_expresion(nodo->valor.asignacion.indice, t, tf);  
                 switch ((int) ev_t.tipo) {
                   case ENTERO:
-                    s.valor.array[ev_indice.valor.entero] = Crear_nodo_num(ev_t.valor.entero);
+                    s->valor.array.elementos[ev_indice.valor.entero] = Crear_nodo_num(ev_t.valor.entero);
                     break;
                   case STRING:
-                    s.valor.array[ev_indice.valor.entero] = Crear_nodo_string(ev_t.valor.texto);
-                } 
+                    s->valor.array.elementos[ev_indice.valor.entero] = Crear_nodo_string(ev_t.valor.texto);
+                    break;
+                }
+                if(ev_indice.valor.entero >= s->valor.array.cantidad){
+                  s->valor.array.elementos = realloc(s->valor.array.elementos, sizeof(Nodo*) * (1 + ev_indice.valor.entero) * 2);
+                  s->valor.array.cantidad = ev_indice.valor.entero + 1;
+                  s->valor.array.capacidad = ev_indice.valor.entero * 2;
+                }
               }
             }
             break;
@@ -357,7 +368,23 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
             } 
             else if (result.tipo == ENTERO) {
               printf("%d\n", result.valor.entero);
-            } 
+            }
+            else if (result.tipo == ARRAY){
+              int i = 0;
+              printf("[");
+              while(i < result.valor.array.cantidad){ 
+                Evaluador ev = Evaluar_expresion(result.valor.array.elementos[i], t, tf);
+                if(ev.tipo == ENTERO){
+                  printf("%d", ev.valor.entero);
+                } 
+                else if(ev.tipo == STRING){
+                  printf("\"%s\"", ev.valor.texto);
+                }
+                if(i < result.valor.array.cantidad - 1){ printf(", "); }
+                i++;
+              }
+              printf("]\n");
+            }
             break;}
         case NODO_BLOQUE: {
             for (int i = 0; i < nodo->valor.bloque.cantidad; i++) {

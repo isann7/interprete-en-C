@@ -8,7 +8,11 @@ typedef enum{
 typedef union{
   char texto[256];
   int entero;
-  struct Nodo** array;
+  struct{
+    struct Nodo** elementos;
+    int cantidad;
+    int capacidad;
+  }array;
 }Contenido;
 
 typedef struct {
@@ -26,6 +30,7 @@ void Tabla_init(TablaSimbolos* t);
 int Existe_simbolo(TablaSimbolos* t, char* nombre);
 Simbolo Obtener_simbolo(TablaSimbolos* t, char* nombre);
 void Guardar_simbolo(TablaSimbolos* t, char* nombre, Contenido valor, Tipo_simbolo tipo);
+Simbolo* Obtener_simbolo_ptr(TablaSimbolos* t, char* nombre);
 
 #endif 
 
