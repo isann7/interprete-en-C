@@ -266,28 +266,72 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
           break;} 
         case NODO_FUNC_CALL:{
           Func f = Obtener_func(tf, nodo->valor.func_call.nombre);
-          Nodo* func_def = f.func_def;
-          int i = 0;
-          TablaSimbolos ttemp;
-          Tabla_init(&ttemp);
-          Contenido v; v.entero = 0;
-          Guardar_simbolo(&ttemp, func_def->valor.func_def.param_salida, v, ENTERO);
-          while(i < nodo->valor.func_call.num_args){
-            Evaluador ev_t = Evaluar_expresion(nodo->valor.func_call.args[i], t, tf);
-            Guardar_simbolo(&ttemp, func_def->valor.func_def.param[i], ev_t.valor, ev_t.tipo);
-            i++;
+          if(f.es_nativa == 1){
+            Evaluador arg = Evaluar_expresion(nodo->valor.func_call.args[0], t, tf); 
+            if(!(strcmp(f.nombre, "LEN"))){
+              ev.tipo = ENTERO;
+              if(arg.tipo == ARRAY){
+                ev.valor.entero = arg.valor.array.cantidad;
+              }
+              else if(arg.tipo == STRING){
+                ev.valor.entero = strlen(arg.valor.texto);
+              }
+              else{
+                printf("tipo no valido");
+                exit(1);
+              }
+            } 
+            else if(!(strcmp(f.nombre, "TYPE"))){
+              ev.tipo = STRING;
+              switch ((int) arg.tipo) {
+                case ENTERO:
+                  strcpy(ev.valor.texto, "ENTERO");
+                  break;
+                case STRING:
+                  strcpy(ev.valor.texto, "STRING");
+                  break;
+                case ARRAY:
+                  strcpy(ev.valor.texto, "ARRAY");
+                  break;
+              } 
+            }
+            else if(!(strcmp(f.nombre, "RAND"))){
+              ev.tipo = ENTERO;
+              if(arg.valor.entero != 0){
+                ev.valor.entero = rand() % arg.valor.entero;
+              }
+              else{
+                ev.valor.entero = rand();
+              }
+            }
           }
-          Evaluador ev_t = Evaluar_instruccion(func_def->valor.func_def.bloque, &ttemp, tf); 
-          Simbolo s = Obtener_simbolo(&ttemp, func_def->valor.func_def.param_salida);
-          ev.tipo = s.tipo;
-          ev.valor = s.valor;
-          break;}
+          else{
+            Nodo* func_def = f.func_def;
+            int i = 0;
+            TablaSimbolos ttemp;
+            Tabla_init(&ttemp);
+            Contenido v; v.entero = 0;
+            Guardar_simbolo(&ttemp, func_def->valor.func_def.param_salida, v, ENTERO);
+            while(i < nodo->valor.func_call.num_args){
+              Evaluador ev_t = Evaluar_expresion(nodo->valor.func_call.args[i], t, tf);
+              Guardar_simbolo(&ttemp, func_def->valor.func_def.param[i], ev_t.valor, ev_t.tipo);
+              i++;
+            }
+            Evaluador ev_t = Evaluar_instruccion(func_def->valor.func_def.bloque, &ttemp, tf); 
+            Simbolo s = Obtener_simbolo(&ttemp, func_def->valor.func_def.param_salida);
+            ev.tipo = s.tipo;
+            ev.valor = s.valor;
+            }
+            break;}
         case NODO_STRING:{
           ev.tipo = STRING;
           strcpy(ev.valor.texto, nodo->valor.str);
           break;}
         case NODO_ARRAY_INIT:{
           Nodo** elementos_evaluados = malloc(nodo->valor.array_init.capacidad * sizeof(Nodo*));
+          for(int i = 0; i < nodo->valor.array_init.capacidad; i++){
+            elementos_evaluados[i] = Crear_nodo_num(0);
+          }
           for (int i = 0; i < nodo->valor.array_init.cantidad; i++) {
             Evaluador ev_elem = Evaluar_expresion(nodo->valor.array_init.elementos[i], t, tf);
             if (ev_elem.tipo == ENTERO) {
@@ -344,20 +388,27 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
               Simbolo* s = Obtener_simbolo_ptr(t, nodo->valor.asignacion.nombre);
               if(s->tipo == ARRAY){
                 Evaluador ev_indice = Evaluar_expresion(nodo->valor.asignacion.indice, t, tf);  
+                int idx = ev_indice.valor.entero; 
+                if(idx >= s->valor.array.capacidad){
+                  int nueva_capacidad = (idx + 1) * 2;
+                  s->valor.array.elementos = realloc(s->valor.array.elementos, sizeof(Nodo*) * nueva_capacidad);
+                  s->valor.array.capacidad = nueva_capacidad;
+                }
+                for(int i = s->valor.array.cantidad; i < idx; i++){
+                    s->valor.array.elementos[i] = Crear_nodo_num(0);
+                }
                 switch ((int) ev_t.tipo) {
                   case ENTERO:
-                    s->valor.array.elementos[ev_indice.valor.entero] = Crear_nodo_num(ev_t.valor.entero);
+                    s->valor.array.elementos[idx] = Crear_nodo_num(ev_t.valor.entero);
                     break;
                   case STRING:
-                    s->valor.array.elementos[ev_indice.valor.entero] = Crear_nodo_string(ev_t.valor.texto);
+                    s->valor.array.elementos[idx] = Crear_nodo_string(ev_t.valor.texto);
                     break;
                 }
-                if(ev_indice.valor.entero >= s->valor.array.cantidad){
-                  s->valor.array.elementos = realloc(s->valor.array.elementos, sizeof(Nodo*) * (1 + ev_indice.valor.entero) * 2);
-                  s->valor.array.cantidad = ev_indice.valor.entero + 1;
-                  s->valor.array.capacidad = ev_indice.valor.entero * 2;
+                if (idx >= s->valor.array.cantidad) {
+                    s->valor.array.cantidad = idx + 1;
                 }
-              }
+              } 
             }
             break;
         }
@@ -389,25 +440,25 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
         case NODO_BLOQUE: {
             for (int i = 0; i < nodo->valor.bloque.cantidad; i++) {
                Evaluador j = Evaluar_instruccion(nodo->valor.bloque.instrucciones[i], t, tf);
-               if(!(j.valor.entero)){ ev.valor.entero = 0; }
+               if(!(j.valor.entero)){ ev.valor.entero = 0; break;}
             }
             break;
         }
         case NODO_IF: {
             if ((Evaluar_expresion(nodo->valor.condicional.condicion, t, tf)).valor.entero) {
                Evaluador i = Evaluar_instruccion(nodo->valor.condicional.rama_verdadera, t, tf);
-               if(!(i.valor.entero)){ ev.valor.entero = 0; }
+               if(!(i.valor.entero)){ ev.valor.entero = 0; break; }
             }
             else if(nodo->valor.condicional.rama_falsa != NULL){
               Evaluador i = Evaluar_instruccion(nodo->valor.condicional.rama_falsa, t, tf);
-              if(!(i.valor.entero)){ ev.valor.entero = 0; }
+              if(!(i.valor.entero)){ ev.valor.entero = 0; break; }
             }
             break;
         } 
         case NODO_WHILE: {
             while ((Evaluar_expresion(nodo->valor.condicional.condicion, t, tf)).valor.entero) {
                Evaluador i = Evaluar_instruccion(nodo->valor.condicional.rama_verdadera, t, tf);
-               if(!(i.valor.entero)){ ev.valor.entero = 0; }
+               if(!(i.valor.entero)){ ev.valor.entero = 0; break; }
             }
             break;
         } 

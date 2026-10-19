@@ -5,6 +5,7 @@ struct Nodo;
 
 typedef struct{
   char nombre[50];
+  int es_nativa;
   struct Nodo* func_def;
 }Func;
 
@@ -18,6 +19,6 @@ void Tabla_func_init(TablaFunciones* tf);
 int Existe_func(TablaFunciones* tf, char nombre[50]);
 Func Obtener_func(TablaFunciones* tf, char nombre[50]);
 void Guardar_func(TablaFunciones* tf, char nombre[50], struct Nodo* func_def);
-
+void Inyectar_func_nativa(TablaFunciones* tf);
 
 #endif

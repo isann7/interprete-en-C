@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include "token.h"
 #include "ast.h"
 #include "tabla_simbolos.h"
@@ -8,7 +9,7 @@
 #include "tabla_funciones.h"
 
 
-char* Leer_archivo(const char* ruta) {
+char* Leer_archivo(const char* ruta) { 
     FILE* archivo = fopen(ruta, "r");
     if (archivo == NULL) {
         printf("Error: No se pudo abrir el archivo %s\n", ruta);
@@ -36,10 +37,13 @@ char* Leer_archivo(const char* ruta) {
 }
 
 int main() {
+    srand(time(NULL)); 
+
     TablaSimbolos memoria;
     TablaFunciones funciones;
     Tabla_init(&memoria);
     Tabla_func_init(&funciones);
+    Inyectar_func_nativa(&funciones);
     
     char* codigo_fuente = Leer_archivo("programa.izan");
 

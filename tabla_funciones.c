@@ -42,6 +42,21 @@ void Guardar_func(TablaFunciones* tf, char nombre[50], Nodo* func_def){
 }
 
 
+void Inyectar_func_nativa(TablaFunciones* tf){
+  Func f;
+  char* nativas[] = {"LEN", "TYPE", "RAND"};
+  int num_func_nativas = sizeof(nativas) / sizeof(nativas[0]);
+  for(int i = 0; i < num_func_nativas; i++){
+    strcpy(f.nombre, nativas[i]);
+    f.es_nativa = 1;
+    f.func_def = NULL;
+    tf->tabla[tf->cantidad] = f;
+    tf->cantidad++;
+  }
+}
+
+
+
 
 
 

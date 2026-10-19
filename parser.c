@@ -115,6 +115,12 @@ Nodo* Parser_factor(Parser* par){
       Parser_consumir(par, TOKEN_INPUT);
       nodo = Crear_nodo_input();
       break;}
+    case TOKEN_MENOS:{
+      Parser_consumir(par, TOKEN_MENOS);
+      Nodo* cero = Crear_nodo_num(0);
+      Nodo* valor = Parser_factor(par);
+      nodo = Crear_nodo_binario(OP_RESTA, cero, valor);
+      break;}
   }
   return nodo;
 }
@@ -136,7 +142,7 @@ Nodo* Parser_termino(Parser* par){
 }
 
 Nodo* Parser_expresion(Parser* par){
-  Nodo* izq = Parser_termino(par);
+  Nodo* izq = Parser_termino(par); 
   while (par->token_actual.tipo == TOKEN_MAS || par->token_actual.tipo == TOKEN_MENOS) { 
     Tipo_binario op = (par->token_actual.tipo == TOKEN_MAS ? OP_SUMA : OP_RESTA);
     Parser_avanzar(par);
