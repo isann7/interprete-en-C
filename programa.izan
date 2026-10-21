@@ -1,28 +1,6 @@
 
 
-FUNC searchInsert(arr, size, target)(pos){
-  VAR left : 0;
-  VAR right : size - 1;
-  VAR mid : left + (right - left) / 2;
-  WHILE(left <= right){
-    VAR mid : left + (right - left) / 2;
-    IF(arr[mid] = target){
-      VAR pos : mid;
-      FINISH;
-    } IFNOT {
-    IF(arr[mid] < target) {
-      VAR left : mid + 1;
-    }
-    IFNOT{
-      VAR right : mid - 1;
-    }
-    }
-  }
-  VAR pos : left;
-  FINISH;
-}
+PRINT "HOLA" + "hola";
+PRINT "HOLA" = "hola";
 
-
-
-VAR nums : [1,3,5,6];
-PRINT searchInsert(nums, LEN(nums), 7);
+PRINT "hola" = "hola";

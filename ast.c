@@ -231,27 +231,42 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
         case NODO_BINARIO: {
             Evaluador ev_izq = Evaluar_expresion(nodo->valor.binario.izq, t, tf);
             Evaluador ev_der = Evaluar_expresion(nodo->valor.binario.der, t, tf);
-            int izq = ev_izq.valor.entero;
-            int der = ev_der.valor.entero;
-            ev.tipo = ENTERO;
-            switch (nodo->valor.binario.tipo) {
-                case OP_SUMA:         ev.valor.entero = izq + der; break;
-                case OP_RESTA:        ev.valor.entero = izq - der; break;
-                case OP_MUL:          ev.valor.entero = izq * der; break;
-                case OP_DIV:   
-                    if (der == 0) { printf("Error: división por cero\n"); exit(1); }
-                    ev.valor.entero = izq / der; break;
-                case OP_RESTO:        ev.valor.entero = izq % der;  break;
-                case OP_MENOR:        ev.valor.entero = izq < der;  break;
-                case OP_MAYOR:        ev.valor.entero = izq > der;  break;
-                case OP_IGUAL:        ev.valor.entero = izq == der; break;
-                case OP_MENOR_IGUAL:  ev.valor.entero = izq <= der; break;
-                case OP_MAYOR_IGUAL:  ev.valor.entero = izq >= der; break;
-                case OP_AND:          ev.valor.entero = izq && der; break;
-                case OP_OR:           ev.valor.entero = izq || der; break;
-                case OP_XOR:          ev.valor.entero = izq ^ der;  break;
-                default: break;
+            if(ev_izq.tipo != ev_der.tipo){
+              printf("intentando operar con tipos distintos");
+              exit(1);
             }
+            else if(ev_izq.tipo == ENTERO){
+              int izq = ev_izq.valor.entero;
+              int der = ev_der.valor.entero;
+              switch (nodo->valor.binario.tipo) {
+                  case OP_SUMA:         ev.valor.entero = izq + der; break;
+                  case OP_RESTA:        ev.valor.entero = izq - der; break;
+                  case OP_MUL:          ev.valor.entero = izq * der; break;
+                  case OP_DIV:   
+                      if (der == 0) { printf("Error: división por cero\n"); exit(1); }
+                      ev.valor.entero = izq / der; break;
+                  case OP_RESTO:        ev.valor.entero = izq % der;  break;
+                  case OP_MENOR:        ev.valor.entero = izq < der;  break;
+                  case OP_MAYOR:        ev.valor.entero = izq > der;  break;
+                  case OP_IGUAL:        ev.valor.entero = izq == der; break;
+                  case OP_MENOR_IGUAL:  ev.valor.entero = izq <= der; break;
+                  case OP_MAYOR_IGUAL:  ev.valor.entero = izq >= der; break;
+                  case OP_AND:          ev.valor.entero = izq && der; break;
+                  case OP_OR:           ev.valor.entero = izq || der; break;
+                  case OP_XOR:          ev.valor.entero = izq ^ der;  break;
+                  default: break;
+              }
+            }
+              else if(ev_izq.tipo == STRING){
+                switch (nodo->valor.binario.tipo) {
+                  case OP_SUMA: strcpy(ev.valor.texto, strcat(ev_izq.valor.texto, ev_der.valor.texto)); 
+                                ev.tipo = STRING; break;
+                  case OP_IGUAL: ev.valor.entero = !strcmp(ev_izq.valor.texto, ev_der.valor.texto); 
+                                 ev.tipo = ENTERO; break;
+                  default:
+                                printf("Operación no definida para strings"); exit(1);
+                }
+              }
             break;
         }
         case NODO_NOT:{
@@ -294,6 +309,53 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                   strcpy(ev.valor.texto, "ARRAY");
                   break;
               } 
+            }
+            else if(!(strcmp(f.nombre, "TO_INTEGER"))){
+              switch ((int) arg.tipo) {
+                case STRING:
+                  ev.valor.entero = atoi(arg.valor.texto);
+                  ev.tipo = ENTERO;
+                  break;
+                case ENTERO:
+                  ev.valor = arg.valor;
+                  ev.tipo = ENTERO;
+                  break;
+                case ARRAY:
+                  for(int i = 0; i < arg.valor.array.cantidad; i++){
+                    if(arg.valor.array.elementos[i]->tipo == NODO_STRING){
+                      int num = atoi(arg.valor.array.elementos[i]->valor.str);
+                      free(arg.valor.array.elementos[i]);
+                      arg.valor.array.elementos[i] = Crear_nodo_num(num);
+                    } 
+                  }
+                  ev.valor = arg.valor;
+                  ev.tipo = ARRAY;
+                  break;
+              }
+            }
+            else if(!(strcmp(f.nombre, "TO_STRING"))){
+              switch ((int) arg.tipo) {
+                case STRING:
+                  ev.valor = arg.valor;
+                  ev.tipo = STRING;
+                  break;
+                case ENTERO:
+                  sprintf(ev.valor.texto, "%d", arg.valor.entero);
+                  ev.tipo = STRING;
+                  break;
+                case ARRAY:
+                  for (int i = 0; i < arg.valor.array.cantidad; i++) {
+                    if(arg.valor.array.elementos[i]->tipo == NODO_NUM){
+                      char str[256];
+                      sprintf(str, "%d", arg.valor.array.elementos[i]->valor.entero);
+                      free(arg.valor.array.elementos[i]);
+                      arg.valor.array.elementos[i] = Crear_nodo_string(str);
+                    }
+                  }
+                  ev.valor = arg.valor;
+                  ev.tipo = ARRAY;
+                  break;
+              }
             }
             else if(!(strcmp(f.nombre, "RAND"))){
               ev.tipo = ENTERO;
@@ -347,8 +409,8 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
           break;}
         case NODO_ARRAY_ACCESO:{ 
           Simbolo s = Obtener_simbolo(t, nodo->valor.array_acceso.nombre);
-            if (s.tipo != ARRAY) {
-                printf("Error: La variable '%s' no es un array.\n", s.nombre);
+            if (s.tipo != ARRAY && s.tipo != STRING) {
+                printf("Error: La variable '%s' no es un array ni un string.\n", s.nombre);
                 exit(1);
             }
             Evaluador indice = Evaluar_expresion(nodo->valor.array_acceso.indice, t, tf);
@@ -357,11 +419,25 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                 exit(1);
             }
             int idx = indice.valor.entero;
-            Nodo* elemento = s.valor.array.elementos[idx];
-            if(idx >= s.valor.array.cantidad){
-              s.valor.array.cantidad = idx;
+            if(s.tipo == ARRAY){
+              if(idx >= 0){
+                Nodo* elemento = s.valor.array.elementos[idx];
+                if(idx >= s.valor.array.cantidad){
+                s.valor.array.cantidad = idx;
+                }
+                ev = Evaluar_expresion(elemento, t, tf);
+              }
             }
-            ev = Evaluar_expresion(elemento, t, tf);
+            else if(s.tipo == STRING){
+              if(idx < 0 || idx > strlen(s.valor.texto)){
+              printf("Error: Indice %d fuera de rango para el string '%s' (Longitud: %d).\n", idx, s.nombre, 
+                      strlen(s.valor.texto));
+              exit(1);
+              }
+              ev.tipo = STRING;
+              ev.valor.texto[0] = s.valor.texto[idx];
+              ev.valor.texto[1] = '\0';
+            }
             break;}
         default:
             printf("tipo de nodo no valido en expresion\n");
@@ -408,14 +484,29 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
                 if (idx >= s->valor.array.cantidad) {
                     s->valor.array.cantidad = idx + 1;
                 }
-              } 
+              }
+              else if(s->tipo == STRING){
+                Evaluador ev_indice = Evaluar_expresion(nodo->valor.asignacion.indice, t, tf);
+                int idx = ev_indice.valor.entero;
+                if(idx >= 256){
+                  printf("Error, tamaño no soportado, máximo es 255\n");
+                  exit(1);
+                }
+                if(idx >= strlen(s->valor.texto)){
+                  for(int i = strlen(s->valor.texto); i < idx; i++){
+                    s->valor.texto[i] = '0';
+                  }
+                  s->valor.texto[idx + 1] = '\0';
+                } 
+                s->valor.texto[idx] = ev_t.valor.texto[0];
+              }
             }
             break;
         }
         case NODO_PRINT: { 
             Evaluador result = Evaluar_expresion(nodo->valor.print, t, tf);
             if (result.tipo == STRING) {
-              printf("%s\n", result.valor.texto);
+              printf("\"%s\"\n", result.valor.texto);
             } 
             else if (result.tipo == ENTERO) {
               printf("%d\n", result.valor.entero);

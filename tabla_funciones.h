@@ -1,6 +1,8 @@
 #ifndef TABLA_FUNCIONES
 #define TABLA_FUNCIONES
 
+#define CAPACIDAD_TABLA 100
+
 struct Nodo;
 
 typedef struct{
@@ -10,7 +12,7 @@ typedef struct{
 }Func;
 
 typedef struct{
-  Func tabla[100];
+  Func tabla[CAPACIDAD_TABLA];
   int cantidad;
 }TablaFunciones;
 
