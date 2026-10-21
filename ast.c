@@ -238,6 +238,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
             else if(ev_izq.tipo == ENTERO){
               int izq = ev_izq.valor.entero;
               int der = ev_der.valor.entero;
+              ev.tipo = ENTERO;
               switch (nodo->valor.binario.tipo) {
                   case OP_SUMA:         ev.valor.entero = izq + der; break;
                   case OP_RESTA:        ev.valor.entero = izq - der; break;

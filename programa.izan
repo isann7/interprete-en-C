@@ -1,6 +1,15 @@
+VAR texto : "interprete";
+VAR i : LEN(texto) - 1;
+VAR invertido : "";
+
+WHILE(i >= 0){
+  VAR invertido : invertido + texto[i];
+  VAR i : i - 1;
+}
+
+PRINT "Original:";
+PRINT texto;
+PRINT "Invertido:";
+PRINT invertido;
 
 
-PRINT "HOLA" + "hola";
-PRINT "HOLA" = "hola";
-
-PRINT "hola" = "hola";
