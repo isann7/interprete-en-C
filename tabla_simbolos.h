@@ -2,7 +2,7 @@
 #define TABLA_SIMBOLOS_H
 
 typedef enum{
-  ENTERO, STRING, ARRAY
+  CUALQUIERA, ENTERO, STRING, ARRAY
 }Tipo_simbolo;
 
 typedef union{
@@ -18,6 +18,7 @@ typedef union{
 typedef struct {
     char nombre[50];
     Tipo_simbolo tipo;
+    Tipo_simbolo estricto;
     Contenido valor; 
 }Simbolo;
 
@@ -29,7 +30,7 @@ typedef struct {
 void Tabla_init(TablaSimbolos* t);
 int Existe_simbolo(TablaSimbolos* t, char* nombre);
 Simbolo Obtener_simbolo(TablaSimbolos* t, char* nombre);
-void Guardar_simbolo(TablaSimbolos* t, char* nombre, Contenido valor, Tipo_simbolo tipo);
+void Guardar_simbolo(TablaSimbolos* t, char* nombre, Contenido valor, Tipo_simbolo tipo, Tipo_simbolo estricto);
 Simbolo* Obtener_simbolo_ptr(TablaSimbolos* t, char* nombre);
 
 #endif 

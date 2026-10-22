@@ -28,6 +28,7 @@ typedef struct Nodo {
         struct {
             struct Nodo* destino;
             struct Nodo* Nodo_asignado;
+            Tipo_simbolo estricto;
         } asignacion;
         Binario binario;
         struct {
@@ -46,6 +47,8 @@ typedef struct Nodo {
             char param[10][50];
             char param_salida[50];
             int num_param;
+            Tipo_simbolo tipos_param[50];
+            Tipo_simbolo tipo_salida;
             struct Nodo* bloque;
         }func_def;
         struct{
@@ -72,7 +75,7 @@ typedef struct{
 }Evaluador;
 
 Nodo* Crear_nodo_num(int num);
-Nodo* Crear_nodo_asig(Nodo* destino, Nodo* expresion);
+Nodo* Crear_nodo_asig(Nodo* destino, Nodo* expresion, Tipo_simbolo estricto);
 Nodo* Crear_nodo_print(Nodo* n);
 Nodo* Crear_nodo_iden(char* nombre);
 Nodo* Crear_nodo_binario(Tipo_binario b, Nodo* izquierda, Nodo* derecha);
@@ -81,7 +84,7 @@ Nodo* Crear_nodo_if_while(Nodo* cond, Nodo* rama_verd, Nodo* rama_falsa, int tip
 Nodo* Crear_nodo_string(char* nombre);
 Nodo* Crear_nodo_not(Nodo* expresion);
 Nodo* Crear_nodo_input(void);
-Nodo* Crear_nodo_func_def(char* nombre, char param[][50], char param_salida[50], int num_param, Nodo* bloque);
+Nodo* Crear_nodo_func_def(char* nombre, Tipo_simbolo* tipos_param, char param[][50], Tipo_simbolo tipo_salida, char param_salida[50], int num_param, Nodo* bloque);
 Nodo* Crear_nodo_func_call(char* nombre, Nodo** args, int num_args);
 Nodo* Crear_nodo_finish(void);
 Nodo* Crear_nodo_array_init(Nodo** n, int cantidad, int capacidad);

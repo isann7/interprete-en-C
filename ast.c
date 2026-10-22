@@ -11,11 +11,12 @@ Nodo* Crear_nodo_num(int num) {
     return nodo;
 }
 
-Nodo* Crear_nodo_asig(Nodo* destino, Nodo* expresion) {
+Nodo* Crear_nodo_asig(Nodo* destino, Nodo* expresion, Tipo_simbolo estricto) {
     Nodo* nodo = malloc(sizeof(Nodo));
     nodo->tipo = NODO_ASIGNAR;
     nodo->valor.asignacion.Nodo_asignado = expresion;
     nodo->valor.asignacion.destino = destino;
+    nodo->valor.asignacion.estricto = estricto;
     return nodo;
 }
 
@@ -84,15 +85,18 @@ Nodo* Crear_nodo_input(void){
   return nodo;
 }
 
-Nodo* Crear_nodo_func_def(char* nombre, char param[][50], char param_salida[50], int num_param, Nodo* bloque){
+
+Nodo* Crear_nodo_func_def(char* nombre, Tipo_simbolo* tipos_param, char param[][50], Tipo_simbolo tipo_salida, char param_salida[50], int num_param, Nodo* bloque){
   Nodo* nodo = malloc(sizeof(Nodo));
   nodo->tipo = NODO_FUNC_DEF;
   strcpy(nodo->valor.func_def.nombre, nombre);
   for (unsigned int i = 0; i < num_param; i++) {
     strcpy(nodo->valor.func_def.param[i], param[i]);
+    nodo->valor.func_def.tipos_param[i] = tipos_param[i];
   } 
   strcpy(nodo->valor.func_def.param_salida, param_salida);
   nodo->valor.func_def.num_param = num_param;
+  nodo->valor.func_def.tipo_salida = tipo_salida;
   nodo->valor.func_def.bloque = bloque;
   return nodo;
 }
@@ -329,13 +333,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                   ev.tipo = ENTERO;
                   break;
                 case ARRAY:
-                  for(int i = 0; i < arg.valor.array.cantidad; i++){
-                    if(arg.valor.array.elementos[i]->tipo == NODO_STRING){
-                      int num = atoi(arg.valor.array.elementos[i]->valor.str);
-                      free(arg.valor.array.elementos[i]);
-                      arg.valor.array.elementos[i] = Crear_nodo_num(num);
-                    }
-                  }
+                  mutar_elementos_array(arg.valor.array.elementos, arg.valor.array.cantidad, ENTERO);
                   ev.valor = arg.valor;
                   ev.tipo = ARRAY;
                   break;
@@ -352,14 +350,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                   ev.tipo = STRING;
                   break;
                 case ARRAY:
-                  for (int i = 0; i < arg.valor.array.cantidad; i++) {
-                    if(arg.valor.array.elementos[i]->tipo == NODO_NUM){
-                      char str[256];
-                      sprintf(str, "%d", arg.valor.array.elementos[i]->valor.entero);
-                      free(arg.valor.array.elementos[i]);
-                      arg.valor.array.elementos[i] = Crear_nodo_string(str);
-                    }
-                  }
+                  mutar_elementos_array(arg.valor.array.elementos, arg.valor.array.cantidad, STRING);
                   ev.valor = arg.valor;
                   ev.tipo = ARRAY;
                   break;
@@ -380,19 +371,38 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
             int i = 0;
             TablaSimbolos ttemp;
             Tabla_init(&ttemp);
-            Contenido v; v.entero = 0;
-            Guardar_simbolo(&ttemp, func_def->valor.func_def.param_salida, v, ENTERO);
+            Contenido v;  
+            Tipo_simbolo tipo_ini = ENTERO;
+            if (func_def->valor.func_def.tipo_salida == STRING) {
+                strcpy(v.texto, ""); 
+                tipo_ini = STRING;
+            } 
+            else if (func_def->valor.func_def.tipo_salida == ARRAY) {
+                v.array.cantidad = 0; 
+                v.array.capacidad = 10;
+                v.array.elementos = malloc(10 * sizeof(Nodo*));
+                tipo_ini = ARRAY;
+            } 
+            else {
+                v.entero = 0;
+            }
+            
+            Guardar_simbolo(&ttemp, func_def->valor.func_def.param_salida, v, tipo_ini, 
+                            func_def->valor.func_def.tipo_salida);
+            
             while(i < nodo->valor.func_call.num_args){
               Evaluador ev_t = Evaluar_expresion(nodo->valor.func_call.args[i], t, tf);
-              Guardar_simbolo(&ttemp, func_def->valor.func_def.param[i], ev_t.valor, ev_t.tipo);
+              Guardar_simbolo(&ttemp, func_def->valor.func_def.param[i], ev_t.valor, ev_t.tipo, 
+                              func_def->valor.func_def.tipos_param[i]);
               i++;
             }
+            
             Evaluador ev_t = Evaluar_instruccion(func_def->valor.func_def.bloque, &ttemp, tf); 
             Simbolo s = Obtener_simbolo(&ttemp, func_def->valor.func_def.param_salida);
             ev.tipo = s.tipo;
             ev.valor = s.valor;
             }
-            break;}
+            break;} 
         case NODO_STRING:{
           ev.tipo = STRING;
           strcpy(ev.valor.texto, nodo->valor.str);
@@ -504,7 +514,7 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
             Evaluador ev_t = Evaluar_expresion(nodo->valor.asignacion.Nodo_asignado, t, tf);
             Nodo* destino = nodo->valor.asignacion.destino;
             if(destino->tipo == NODO_IDEN){
-                Guardar_simbolo(t, destino->valor.iden, ev_t.valor, ev_t.tipo);  
+                Guardar_simbolo(t, destino->valor.iden, ev_t.valor, ev_t.tipo, nodo->valor.asignacion.estricto);  
             }
             else if(destino->tipo == NODO_ARRAY_ACCESO){
                 Nodo** ref = Obtener_referencia_array(destino, t, tf);
@@ -514,7 +524,9 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
                     } else if (ev_t.tipo == STRING) {
                         *ref = Crear_nodo_string(ev_t.valor.texto);
                     } else if (ev_t.tipo == ARRAY) {
-                        *ref = Crear_nodo_array_init(ev_t.valor.array.elementos, ev_t.valor.array.cantidad, ev_t.valor.array.capacidad);
+                        *ref = Crear_nodo_array_init(ev_t.valor.array.elementos, 
+                                                     ev_t.valor.array.cantidad, 
+                                                     ev_t.valor.array.capacidad);
                     }
                 } else {
                     Evaluador base_ev = Evaluar_expresion(destino->valor.array_acceso.base, t, tf);

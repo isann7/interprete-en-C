@@ -45,7 +45,7 @@ Token Obtener_token(Lexer* lex) {
             case ']': t.tipo = TOKEN_R_CORCHETE; Lexer_avanzar(lex); break;
             case ';': t.tipo = TOKEN_PUNCOMA; Lexer_avanzar(lex); break;
             case ':': t.tipo = TOKEN_ASIGNAR; Lexer_avanzar(lex); break;
-            case ',': t.tipo = TOKEN_COMA; Lexer_avanzar(lex); break;
+            case ',': t.tipo = TOKEN_COMA; Lexer_avanzar(lex); break; 
             case '#':{
                 while(lex->char_actual != '\n' && lex->char_actual != '\0'){
                   Lexer_avanzar(lex);      
@@ -119,6 +119,9 @@ Token Obtener_token(Lexer* lex) {
         else if(!strcmp("INPUT", nombre)){ t.tipo = TOKEN_INPUT; }
         else if(!strcmp("FUNC", nombre)){ t.tipo = TOKEN_FUNC; }
         else if(!strcmp("FINISH", nombre)){ t.tipo = TOKEN_FINISH; }
+        else if(!strcmp("INT", nombre)){ t.tipo = TOKEN_TIPO_INT; }
+        else if(!strcmp("STR", nombre)){ t.tipo = TOKEN_TIPO_STR; }
+        else if(!strcmp("ARR", nombre)){ t.tipo = TOKEN_TIPO_ARR; }
         else {
             t.tipo = TOKEN_IDEN;
             strcpy(t.valor.frase, nombre);

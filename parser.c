@@ -200,6 +200,31 @@ Nodo* Parser_logico_or(Parser* par){
   return izq;
 }
 
+
+Tipo_simbolo Parser_leer_tipo_opcional(Parser* par){
+  Tipo_simbolo tipo = CUALQUIERA;
+  if(par->token_actual.tipo == TOKEN_LPAR){
+    Parser_consumir(par, TOKEN_LPAR);
+    if(par->token_actual.tipo == TOKEN_TIPO_INT){
+      tipo = ENTERO;
+      Parser_avanzar(par);
+    }
+    else if(par->token_actual.tipo == TOKEN_TIPO_STR){
+      tipo = STRING;
+      Parser_avanzar(par);
+    }
+    else if(par->token_actual.tipo == TOKEN_TIPO_ARR){
+      tipo = ARRAY;
+      Parser_avanzar(par);
+    }
+    else{
+      printf("Error sintáctico, se esperaba un tipo valido\n");
+    }
+    Parser_consumir(par, TOKEN_RPAR);
+  }
+  return tipo;
+}
+
 Nodo* Parser_instruccion(Parser* par){
   Nodo* nodo; 
   switch ((int) par->token_actual.tipo) {
@@ -209,6 +234,8 @@ Nodo* Parser_instruccion(Parser* par){
       Nodo* indice = NULL;
       strcpy(nombre, par->token_actual.valor.frase);
       Parser_consumir(par, TOKEN_IDEN);
+
+      Tipo_simbolo tipo_estricto = Parser_leer_tipo_opcional(par);
       Nodo* destino = Crear_nodo_iden(nombre);
 
       if(par->token_actual.tipo == TOKEN_L_CORCHETE){
@@ -227,7 +254,7 @@ Nodo* Parser_instruccion(Parser* par){
       Parser_consumir(par, TOKEN_ASIGNAR);
       Nodo* exp = Parser_logico_or(par);
       Parser_consumir(par, TOKEN_PUNCOMA);
-      nodo = Crear_nodo_asig(destino, exp);
+      nodo = Crear_nodo_asig(destino, exp, tipo_estricto);
       break;}
     case TOKEN_PRINT:{
       Parser_consumir(par, TOKEN_PRINT);
@@ -256,6 +283,7 @@ Nodo* Parser_instruccion(Parser* par){
         Parser_consumir(par, TOKEN_LPAR);
         unsigned int i = 0;
         char param[10][50];
+        Tipo_simbolo tipos_param[10];
         while(par->token_actual.tipo != TOKEN_RPAR){
           if(par->token_actual.tipo == TOKEN_COMA){
             Parser_consumir(par, TOKEN_COMA);
@@ -263,6 +291,7 @@ Nodo* Parser_instruccion(Parser* par){
           else if(par->token_actual.tipo == TOKEN_IDEN){
             strcpy(param[i], par->token_actual.valor.frase);
             Parser_consumir(par, TOKEN_IDEN);
+            tipos_param[i] = Parser_leer_tipo_opcional(par);
             i++;
           }
           else{
@@ -271,15 +300,17 @@ Nodo* Parser_instruccion(Parser* par){
           }
         }
         char param_salida[50];
+        Tipo_simbolo tipo_salida = CUALQUIERA;
         Parser_consumir(par, TOKEN_RPAR);
         Parser_consumir(par, TOKEN_LPAR);
         if(par->token_actual.tipo == TOKEN_IDEN){
           strcpy(param_salida, par->token_actual.valor.frase);
           Parser_consumir(par, TOKEN_IDEN);
+          tipo_salida = Parser_leer_tipo_opcional(par);
         } 
         Parser_consumir(par, TOKEN_RPAR);
         Nodo* bloque = Parser_bloque(par);
-        nodo = Crear_nodo_func_def(nombre, param, param_salida, i, bloque);
+        nodo = Crear_nodo_func_def(nombre, tipos_param, param, tipo_salida, param_salida, i, bloque);
         break;}
     case TOKEN_FINISH:{
         Parser_consumir(par, TOKEN_FINISH);

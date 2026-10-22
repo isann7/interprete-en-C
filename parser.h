@@ -13,6 +13,7 @@ typedef struct {
 void Parser_init(Parser* par, char* fuente);
 void Parser_avanzar(Parser* par);
 void Parser_consumir(Parser* par, Tipo_token tipo_esperado);
+Tipo_simbolo Parser_leer_tipo_opcional(Parser* par);
 
 Nodo* Parser_factor(Parser* par);
 Nodo* Parser_termino(Parser* par);
