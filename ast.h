@@ -26,8 +26,7 @@ typedef struct Nodo {
         char iden[50];
         char str[256];
         struct {
-            char nombre[50];
-            struct Nodo* indice;
+            struct Nodo* destino;
             struct Nodo* Nodo_asignado;
         } asignacion;
         Binario binario;
@@ -61,7 +60,7 @@ typedef struct Nodo {
           int capacidad;
         }array_init;
         struct{
-          char nombre[50];
+          struct Nodo* base;
           struct Nodo* indice;
         }array_acceso;
     } valor;
@@ -73,7 +72,7 @@ typedef struct{
 }Evaluador;
 
 Nodo* Crear_nodo_num(int num);
-Nodo* Crear_nodo_asig(char* nombre, Nodo* expresion, Nodo* indice);
+Nodo* Crear_nodo_asig(Nodo* destino, Nodo* expresion);
 Nodo* Crear_nodo_print(Nodo* n);
 Nodo* Crear_nodo_iden(char* nombre);
 Nodo* Crear_nodo_binario(Tipo_binario b, Nodo* izquierda, Nodo* derecha);
@@ -86,9 +85,10 @@ Nodo* Crear_nodo_func_def(char* nombre, char param[][50], char param_salida[50],
 Nodo* Crear_nodo_func_call(char* nombre, Nodo** args, int num_args);
 Nodo* Crear_nodo_finish(void);
 Nodo* Crear_nodo_array_init(Nodo** n, int cantidad, int capacidad);
-Nodo* Crear_nodo_array_acceso(char* nombre, Nodo* indice);
+Nodo* Crear_nodo_array_acceso(Nodo* base, Nodo* indice);
 Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf);
 Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf);
+Nodo** Obtener_referencia_array(Nodo* destino, TablaSimbolos* t, TablaFunciones* tf);
 
 void Imprimir_ast(Nodo* nodo);
 

@@ -1,15 +1,11 @@
-VAR texto : "interprete";
-VAR i : LEN(texto) - 1;
-VAR invertido : "";
-
-WHILE(i >= 0){
-  VAR invertido : invertido + texto[i];
-  VAR i : i - 1;
-}
-
-PRINT "Original:";
-PRINT texto;
-PRINT "Invertido:";
-PRINT invertido;
 
 
+
+
+VAR x : [];
+VAR x[0] : [1,2];
+VAR x[1] : [1, [2,3]];
+VAR x[2] : x;
+
+
+PRINT x[1,0];

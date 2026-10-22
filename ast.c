@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "ast.h"
+#include "funciones_recursivas.h"
 
 Nodo* Crear_nodo_num(int num) {
     Nodo* nodo = malloc(sizeof(Nodo));
@@ -10,12 +11,11 @@ Nodo* Crear_nodo_num(int num) {
     return nodo;
 }
 
-Nodo* Crear_nodo_asig(char* nombre, Nodo* expresion, Nodo* indice) {
+Nodo* Crear_nodo_asig(Nodo* destino, Nodo* expresion) {
     Nodo* nodo = malloc(sizeof(Nodo));
     nodo->tipo = NODO_ASIGNAR;
-    strcpy(nodo->valor.asignacion.nombre, nombre);
     nodo->valor.asignacion.Nodo_asignado = expresion;
-    nodo->valor.asignacion.indice = indice;
+    nodo->valor.asignacion.destino = destino;
     return nodo;
 }
 
@@ -123,11 +123,11 @@ Nodo* Crear_nodo_array_init(Nodo** n, int cantidad, int capacidad){
   return nodo;
 }
  
-Nodo* Crear_nodo_array_acceso(char* nombre, Nodo* indice){
+Nodo* Crear_nodo_array_acceso(Nodo* base, Nodo* indice){
   Nodo* nodo = malloc(sizeof(Nodo));
   nodo->tipo = NODO_ARRAY_ACCESO; 
+  nodo->valor.array_acceso.base = base;
   nodo->valor.array_acceso.indice = indice;
-  strcpy(nodo->valor.array_acceso.nombre, nombre);
   return nodo;
 }
 
@@ -135,7 +135,9 @@ void Imprimir_ast(Nodo* nodo) {
     if (nodo == NULL) return;
     switch (nodo->tipo) {
         case NODO_ASIGNAR:
-            printf("Nodo Asignacion (variable: %s)\n", nodo->valor.asignacion.nombre);
+            printf("Nodo Asignacion\n");
+            printf("  |__ Destino: ");
+            Imprimir_ast(nodo->valor.asignacion.destino);
             printf("  |__ Expresion: ");
             Imprimir_ast(nodo->valor.asignacion.Nodo_asignado);
             break;
@@ -168,7 +170,9 @@ void Imprimir_ast(Nodo* nodo) {
             }
             break;
         case NODO_ARRAY_ACCESO:
-            printf("Acceso a Array (variable: %s)\n", nodo->valor.array_acceso.nombre);
+            printf("Acceso a Array\n");
+            printf("  |__ Base: ");
+            Imprimir_ast(nodo->valor.array_acceso.base);
             printf("  |__ Indice: ");
             Imprimir_ast(nodo->valor.array_acceso.indice);
             break;
@@ -211,6 +215,9 @@ void Imprimir_ast(Nodo* nodo) {
             break;
     }
 }
+
+
+
 
 Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
     if (nodo == NULL) {
@@ -327,7 +334,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                       int num = atoi(arg.valor.array.elementos[i]->valor.str);
                       free(arg.valor.array.elementos[i]);
                       arg.valor.array.elementos[i] = Crear_nodo_num(num);
-                    } 
+                    }
                   }
                   ev.valor = arg.valor;
                   ev.tipo = ARRAY;
@@ -399,52 +406,89 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
             Evaluador ev_elem = Evaluar_expresion(nodo->valor.array_init.elementos[i], t, tf);
             if (ev_elem.tipo == ENTERO) {
                 elementos_evaluados[i] = Crear_nodo_num(ev_elem.valor.entero);
-             } else if (ev_elem.tipo == STRING) {
-                 elementos_evaluados[i] = Crear_nodo_string(ev_elem.valor.texto);               
-             }
+            } 
+            else if (ev_elem.tipo == STRING) {
+                elementos_evaluados[i] = Crear_nodo_string(ev_elem.valor.texto);   
             }
+            else if (ev_elem.tipo == ARRAY){
+              elementos_evaluados[i] = Crear_nodo_array_init(ev_elem.valor.array.elementos, ev_elem.valor.array.cantidad, ev_elem.valor.array.capacidad);
+            } 
+          }
           ev.valor.array.elementos = elementos_evaluados;
           ev.valor.array.cantidad = nodo->valor.array_init.cantidad;
           ev.valor.array.capacidad = nodo->valor.array_init.capacidad;
           ev.tipo = ARRAY;
           break;}
         case NODO_ARRAY_ACCESO:{ 
-          Simbolo s = Obtener_simbolo(t, nodo->valor.array_acceso.nombre);
-            if (s.tipo != ARRAY && s.tipo != STRING) {
-                printf("Error: La variable '%s' no es un array ni un string.\n", s.nombre);
-                exit(1);
-            }
+            Evaluador base = Evaluar_expresion(nodo->valor.array_acceso.base, t, tf);
             Evaluador indice = Evaluar_expresion(nodo->valor.array_acceso.indice, t, tf);
+            
             if (indice.tipo != ENTERO) {
-                printf("Error: El indice para '%s' debe ser un numero entero.\n", s.nombre);
+                printf("Error: El indice debe ser un numero entero.\n");
                 exit(1);
             }
             int idx = indice.valor.entero;
-            if(s.tipo == ARRAY){
-              if(idx >= 0){
-                Nodo* elemento = s.valor.array.elementos[idx];
-                if(idx >= s.valor.array.cantidad){
-                s.valor.array.cantidad = idx;
-                }
+            
+            if(base.tipo == ARRAY){
+              if(idx >= 0 && idx < base.valor.array.cantidad){
+                Nodo* elemento = base.valor.array.elementos[idx]; 
                 ev = Evaluar_expresion(elemento, t, tf);
               }
+              else{
+                ev.tipo = ENTERO;
+                ev.valor.entero = 0;
+              }
             }
-            else if(s.tipo == STRING){
-              if(idx < 0 || idx > strlen(s.valor.texto)){
-              printf("Error: Indice %d fuera de rango para el string '%s' (Longitud: %d).\n", idx, s.nombre, 
-                      strlen(s.valor.texto));
-              exit(1);
+            else if(base.tipo == STRING){
+              if(idx < 0 || idx >= strlen(base.valor.texto)){
+                  printf("Error: Indice %d fuera de rango.\n", idx);
+                  exit(1);
               }
               ev.tipo = STRING;
-              ev.valor.texto[0] = s.valor.texto[idx];
+              ev.valor.texto[0] = base.valor.texto[idx];
               ev.valor.texto[1] = '\0';
             }
-            break;}
+            break;
+        }
         default:
             printf("tipo de nodo no valido en expresion\n");
             exit(1);
     }
     return ev;
+}
+
+Nodo** Obtener_referencia_array(Nodo* destino, TablaSimbolos* t, TablaFunciones* tf) {
+    if (destino->tipo == NODO_ARRAY_ACCESO) {
+        Evaluador ind_ev = Evaluar_expresion(destino->valor.array_acceso.indice, t, tf);
+        int idx = ind_ev.valor.entero;
+
+        if (destino->valor.array_acceso.base->tipo == NODO_IDEN) {
+            Simbolo* s = Obtener_simbolo_ptr(t, destino->valor.array_acceso.base->valor.iden);
+            if (s->tipo == ARRAY) {
+                if (idx >= 0 && idx < s->valor.array.capacidad) {
+                    if (idx >= s->valor.array.cantidad) {
+                        s->valor.array.cantidad = idx + 1;
+                    }
+                    return &(s->valor.array.elementos[idx]);
+                }
+            }
+        } 
+        else if (destino->valor.array_acceso.base->tipo == NODO_ARRAY_ACCESO) {
+            Nodo** ref_base = Obtener_referencia_array(destino->valor.array_acceso.base, t, tf);
+            if (ref_base != NULL) {
+                Nodo* nodo_array = *ref_base; 
+                if (nodo_array != NULL && nodo_array->tipo == NODO_ARRAY_INIT) {
+                    if (idx >= 0 && idx < nodo_array->valor.array_init.capacidad) {
+                        if (idx >= nodo_array->valor.array_init.cantidad) {
+                            nodo_array->valor.array_init.cantidad = idx + 1;
+                        }
+                        return &(nodo_array->valor.array_init.elementos[idx]);
+                    }
+                }
+            }
+        }
+    }
+    return NULL;
 }
 
 Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
@@ -456,51 +500,30 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
     ev.tipo = ENTERO;
     ev.valor.entero = 1;
     switch (nodo->tipo) {
-        case NODO_ASIGNAR: {
+         case NODO_ASIGNAR: {
             Evaluador ev_t = Evaluar_expresion(nodo->valor.asignacion.Nodo_asignado, t, tf);
-            if(nodo->valor.asignacion.indice == NULL){
-              Guardar_simbolo(t, nodo->valor.asignacion.nombre, ev_t.valor, ev_t.tipo);  
+            Nodo* destino = nodo->valor.asignacion.destino;
+            if(destino->tipo == NODO_IDEN){
+                Guardar_simbolo(t, destino->valor.iden, ev_t.valor, ev_t.tipo);  
             }
-            else{
-              Simbolo* s = Obtener_simbolo_ptr(t, nodo->valor.asignacion.nombre);
-              if(s->tipo == ARRAY){
-                Evaluador ev_indice = Evaluar_expresion(nodo->valor.asignacion.indice, t, tf);  
-                int idx = ev_indice.valor.entero; 
-                if(idx >= s->valor.array.capacidad){
-                  int nueva_capacidad = (idx + 1) * 2;
-                  s->valor.array.elementos = realloc(s->valor.array.elementos, sizeof(Nodo*) * nueva_capacidad);
-                  s->valor.array.capacidad = nueva_capacidad;
+            else if(destino->tipo == NODO_ARRAY_ACCESO){
+                Nodo** ref = Obtener_referencia_array(destino, t, tf);
+                if (ref != NULL) {
+                    if (ev_t.tipo == ENTERO) {
+                        *ref = Crear_nodo_num(ev_t.valor.entero);
+                    } else if (ev_t.tipo == STRING) {
+                        *ref = Crear_nodo_string(ev_t.valor.texto);
+                    } else if (ev_t.tipo == ARRAY) {
+                        *ref = Crear_nodo_array_init(ev_t.valor.array.elementos, ev_t.valor.array.cantidad, ev_t.valor.array.capacidad);
+                    }
+                } else {
+                    Evaluador base_ev = Evaluar_expresion(destino->valor.array_acceso.base, t, tf);
+                    Evaluador ind_ev = Evaluar_expresion(destino->valor.array_acceso.indice, t, tf);
+                    if(base_ev.tipo == STRING){
+                        Simbolo* s = Obtener_simbolo_ptr(t, destino->valor.array_acceso.base->valor.iden);
+                        s->valor.texto[ind_ev.valor.entero] = ev_t.valor.texto[0];
+                    }
                 }
-                for(int i = s->valor.array.cantidad; i < idx; i++){
-                    s->valor.array.elementos[i] = Crear_nodo_num(0);
-                }
-                switch ((int) ev_t.tipo) {
-                  case ENTERO:
-                    s->valor.array.elementos[idx] = Crear_nodo_num(ev_t.valor.entero);
-                    break;
-                  case STRING:
-                    s->valor.array.elementos[idx] = Crear_nodo_string(ev_t.valor.texto);
-                    break;
-                }
-                if (idx >= s->valor.array.cantidad) {
-                    s->valor.array.cantidad = idx + 1;
-                }
-              }
-              else if(s->tipo == STRING){
-                Evaluador ev_indice = Evaluar_expresion(nodo->valor.asignacion.indice, t, tf);
-                int idx = ev_indice.valor.entero;
-                if(idx >= 256){
-                  printf("Error, tamaño no soportado, máximo es 255\n");
-                  exit(1);
-                }
-                if(idx >= strlen(s->valor.texto)){
-                  for(int i = strlen(s->valor.texto); i < idx; i++){
-                    s->valor.texto[i] = '0';
-                  }
-                  s->valor.texto[idx + 1] = '\0';
-                } 
-                s->valor.texto[idx] = ev_t.valor.texto[0];
-              }
             }
             break;
         }
@@ -513,20 +536,8 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
               printf("%d\n", result.valor.entero);
             }
             else if (result.tipo == ARRAY){
-              int i = 0;
-              printf("[");
-              while(i < result.valor.array.cantidad){ 
-                Evaluador ev = Evaluar_expresion(result.valor.array.elementos[i], t, tf);
-                if(ev.tipo == ENTERO){
-                  printf("%d", ev.valor.entero);
-                } 
-                else if(ev.tipo == STRING){
-                  printf("\"%s\"", ev.valor.texto);
-                }
-                if(i < result.valor.array.cantidad - 1){ printf(", "); }
-                i++;
-              }
-              printf("]\n");
+              print_array(result, t, tf);     
+              printf("\n");
             }
             break;}
         case NODO_BLOQUE: {

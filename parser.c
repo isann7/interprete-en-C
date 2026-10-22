@@ -67,10 +67,17 @@ Nodo* Parser_factor(Parser* par){
         nodo = Crear_nodo_func_call(nombre, argumentos, i);
       }
       else if(par->token_actual.tipo == TOKEN_L_CORCHETE){
+        nodo = Crear_nodo_iden(nombre);
         Parser_consumir(par, TOKEN_L_CORCHETE);
         Nodo* indice = Parser_logico_or(par);
+        nodo = Crear_nodo_array_acceso(nodo, indice);
+
+        while(par->token_actual.tipo == TOKEN_COMA){
+          Parser_consumir(par, TOKEN_COMA);
+          indice = Parser_logico_or(par);
+          nodo = Crear_nodo_array_acceso(nodo, indice);
+        }
         Parser_consumir(par, TOKEN_R_CORCHETE);
-        nodo = Crear_nodo_array_acceso(nombre, indice);
       }
       else{  
         nodo = Crear_nodo_iden(nombre);
@@ -202,15 +209,25 @@ Nodo* Parser_instruccion(Parser* par){
       Nodo* indice = NULL;
       strcpy(nombre, par->token_actual.valor.frase);
       Parser_consumir(par, TOKEN_IDEN);
+      Nodo* destino = Crear_nodo_iden(nombre);
+
       if(par->token_actual.tipo == TOKEN_L_CORCHETE){
         Parser_consumir(par, TOKEN_L_CORCHETE);
         indice = Parser_logico_or(par);
+        destino = Crear_nodo_array_acceso(destino, indice);
+      
+        while(par->token_actual.tipo == TOKEN_COMA){
+          Parser_consumir(par, TOKEN_COMA);
+          indice = Parser_logico_or(par);
+          destino = Crear_nodo_array_acceso(destino, indice);
+        }
         Parser_consumir(par, TOKEN_R_CORCHETE);
       }
+
       Parser_consumir(par, TOKEN_ASIGNAR);
       Nodo* exp = Parser_logico_or(par);
       Parser_consumir(par, TOKEN_PUNCOMA);
-      nodo = Crear_nodo_asig(nombre, exp, indice);
+      nodo = Crear_nodo_asig(destino, exp);
       break;}
     case TOKEN_PRINT:{
       Parser_consumir(par, TOKEN_PRINT);

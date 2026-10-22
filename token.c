@@ -163,6 +163,7 @@ void Print_token(int t) {
         case TOKEN_NOT:         printf("token_not"); break;
         case TOKEN_R_CORCHETE:  printf("token_r_corchete"); break;
         case TOKEN_L_CORCHETE:  printf("token_l_corchete"); break;
+        case TOKEN_COMA:        printf("token_coma"); break;  
         default:                printf("token_desconocido"); break;
     }
     printf("\n");
