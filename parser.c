@@ -264,14 +264,23 @@ Nodo* Parser_instruccion(Parser* par){
       break;} 
     case TOKEN_IF:
     case TOKEN_WHILE:{
-      int tipo_actual = (par->token_actual.tipo == TOKEN_IF ? 0 : 1);
-      Parser_consumir(par, par->token_actual.tipo == TOKEN_IF ? TOKEN_IF : TOKEN_WHILE);
+      Tipo_token tipo_actual = par->token_actual.tipo;
+      Parser_consumir(par, tipo_actual);
       Nodo* condicion = Parser_logico_or(par);
       Nodo* bloque_verdadero = Parser_bloque(par);
       Nodo* bloque_falso = NULL;      
-      if(tipo_actual == 0 && par->token_actual.tipo == TOKEN_IFNOT){ 
+      if(tipo_actual == TOKEN_IF && par->token_actual.tipo == TOKEN_IFNOT){ 
         Parser_consumir(par, TOKEN_IFNOT);
-        bloque_falso = Parser_bloque(par);
+        if(par->token_actual.tipo == TOKEN_L_LLAV){
+          bloque_falso = Parser_bloque(par);
+        }
+        else if(par->token_actual.tipo == TOKEN_IF){
+          bloque_falso = Parser_instruccion(par);
+        }
+        else {
+          printf("Error sintactico: Se esperaba '{' o 'IF' despues de 'IFNOT'.\n");
+          exit(1);
+        }
       } 
       nodo = Crear_nodo_if_while(condicion, bloque_verdadero, bloque_falso, tipo_actual);
       break;}   

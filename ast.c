@@ -3,6 +3,7 @@
 #include <string.h>
 #include "ast.h"
 #include "funciones_recursivas.h"
+#include <ctype.h>
 
 Nodo* Crear_nodo_num(int num) {
     Nodo* nodo = malloc(sizeof(Nodo));
@@ -51,12 +52,12 @@ Nodo* Crear_nodo_bloque(void) {
     return nodo;
 }
 
-Nodo* Crear_nodo_if_while(Nodo* cond, Nodo* rama_verd, Nodo* rama_falsa, int tipo) {
+Nodo* Crear_nodo_if_while(Nodo* cond, Nodo* rama_verd, Nodo* rama_falsa, Tipo_token tipo) {
     Nodo* nodo = malloc(sizeof(Nodo));
     Tipo_nodo t;
-    switch (tipo) {
-      case 0: t = NODO_IF; break;
-      case 1: t = NODO_WHILE; break;
+    switch ((int) tipo) {
+      case TOKEN_IF: t = NODO_IF; break;
+      case TOKEN_WHILE: t = NODO_WHILE; break;
     }
     nodo->tipo = t;
     nodo->valor.condicional.condicion = cond;
@@ -220,7 +221,27 @@ void Imprimir_ast(Nodo* nodo) {
     }
 }
 
+int es_numero_entero(const char* str){
+  if(str == NULL || *str == '\0'){
+    return 0;
+  }
+  int i = 0;
 
+  if(str[0] == '-' || str[0] == '+'){
+    i++;
+  }
+  
+  if(str[i] == '\0'){
+    return 0;
+  }
+
+  for(; str[i] != '\0'; i++){
+    if(!isdigit((unsigned char) str[i])){
+      return 0;
+    }
+  }
+  return 1;
+}
 
 
 Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
@@ -288,8 +309,23 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
           break;}
         case NODO_INPUT:{
           printf(">> ");
-          scanf("%d", &(ev.valor.entero));
-          ev.tipo = ENTERO;
+
+          char buff[256];
+          if(fgets(buff, sizeof(buff), stdin) != NULL){
+            buff[strcspn(buff, "\n")] = 0;
+            if(es_numero_entero(buff)){
+              ev.tipo = ENTERO;
+              ev.valor.entero = atoi(buff);
+            }
+            else{
+              ev.tipo = STRING;
+              strcpy(ev.valor.texto, buff);
+            }
+          }
+          else {
+            ev.tipo = STRING;
+            strcpy(ev.valor.texto, "");
+          }
           break;} 
         case NODO_FUNC_CALL:{
           Func f = Obtener_func(tf, nodo->valor.func_call.nombre);

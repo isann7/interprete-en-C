@@ -1,4 +1,3 @@
+VAR x (STR): INPUT;
 
-
-
-
+PRINT x;
