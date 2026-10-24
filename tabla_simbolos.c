@@ -22,8 +22,8 @@ int Existe_simbolo(TablaSimbolos* t, char* nombre) {
 Simbolo Obtener_simbolo(TablaSimbolos* t, char* nombre) {
     int idx = Existe_simbolo(t, nombre);
     if (idx == -1) {
-        printf("error, no existe el simbolo %s\n", nombre); 
-        exit(1);
+      printf("no existe el simbolo %s", nombre);
+      exit(1);
     }
     return t->tabla[idx];
 }

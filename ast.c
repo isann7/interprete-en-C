@@ -408,22 +408,22 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
             TablaSimbolos ttemp;
             Tabla_init(&ttemp);
             Contenido v;  
-            Tipo_simbolo tipo_ini = ENTERO;
+            Tipo_simbolo tipo_init = ENTERO;
             if (func_def->valor.func_def.tipo_salida == STRING) {
                 strcpy(v.texto, ""); 
-                tipo_ini = STRING;
+                tipo_init = STRING;
             } 
             else if (func_def->valor.func_def.tipo_salida == ARRAY) {
                 v.array.cantidad = 0; 
                 v.array.capacidad = 10;
                 v.array.elementos = malloc(10 * sizeof(Nodo*));
-                tipo_ini = ARRAY;
+                tipo_init = ARRAY;
             } 
             else {
                 v.entero = 0;
             }
             
-            Guardar_simbolo(&ttemp, func_def->valor.func_def.param_salida, v, tipo_ini, 
+            Guardar_simbolo(&ttemp, func_def->valor.func_def.param_salida, v, tipo_init, 
                             func_def->valor.func_def.tipo_salida);
             
             while(i < nodo->valor.func_call.num_args){
@@ -432,7 +432,14 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                               func_def->valor.func_def.tipos_param[i]);
               i++;
             }
-            
+            i = 0;
+            while(i < func_def->valor.func_def.entorno.cantidad){
+              Guardar_simbolo(&ttemp, func_def->valor.func_def.entorno.tabla[i].nombre,
+                                      func_def->valor.func_def.entorno.tabla[i].valor, 
+                                      func_def->valor.func_def.entorno.tabla[i].tipo,
+                                      func_def->valor.func_def.entorno.tabla[i].estricto);
+              i++;
+            }
             Evaluador ev_t = Evaluar_instruccion(func_def->valor.func_def.bloque, &ttemp, tf); 
             Simbolo s = Obtener_simbolo(&ttemp, func_def->valor.func_def.param_salida);
             ev.tipo = s.tipo;
@@ -589,9 +596,26 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
             }
             break;}
         case NODO_BLOQUE: {
+            TablaSimbolos tabla_bloque;
+            tabla_bloque.cantidad = 0;
+
+            for(int i = 0; i < t->cantidad; i++){
+              Guardar_simbolo(&(tabla_bloque),
+                              t->tabla[i].nombre,
+                              t->tabla[i].valor,
+                              t->tabla[i].tipo,
+                              t->tabla[i].estricto);
+            }
+
             for (int i = 0; i < nodo->valor.bloque.cantidad; i++) {
-               Evaluador j = Evaluar_instruccion(nodo->valor.bloque.instrucciones[i], t, tf);
+               Evaluador j = Evaluar_instruccion(nodo->valor.bloque.instrucciones[i], &tabla_bloque, tf);
                if(!(j.valor.entero)){ ev.valor.entero = 0; break;}
+            }
+
+            for(int i = 0; i < t->cantidad; i++){
+              Simbolo s = Obtener_simbolo(&tabla_bloque, t->tabla[i].nombre);
+              t->tabla[i].valor = s.valor;
+              t->tabla[i].tipo = s.tipo;
             }
             break;
         }
@@ -614,6 +638,14 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
             break;
         } 
         case NODO_FUNC_DEF:{
+            nodo->valor.func_def.entorno.cantidad = 0;
+            for(int i = 0; i < t->cantidad; i++){
+              Guardar_simbolo(&(nodo->valor.func_def.entorno),
+                              t->tabla[i].nombre,
+                              t->tabla[i].valor,
+                              t->tabla[i].tipo,
+                              t->tabla[i].estricto);
+            }
             Guardar_func(tf, nodo->valor.func_def.nombre, nodo);
             break;} 
         case NODO_FINISH:{ ev.valor.entero = 0; break; }

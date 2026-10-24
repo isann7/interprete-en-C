@@ -2,7 +2,7 @@
 #define TABLA_SIMBOLOS_H
 
 typedef enum{
-  CUALQUIERA, ENTERO, STRING, ARRAY
+  NOENCONTRADO, CUALQUIERA, ENTERO, STRING, ARRAY
 }Tipo_simbolo;
 
 typedef union{
