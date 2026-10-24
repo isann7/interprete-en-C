@@ -162,7 +162,7 @@ Nodo* Parser_expresion(Parser* par){
 Nodo* Parser_comparacion(Parser* par){
   Nodo* izq = Parser_expresion(par);
   while(par->token_actual.tipo == TOKEN_MENOR || par->token_actual.tipo == TOKEN_MAYOR || par->token_actual.tipo == TOKEN_IGUAL 
-        || par->token_actual.tipo == TOKEN_MAYOR_IGUAL || par->token_actual.tipo == TOKEN_MENOR_IGUAL)
+        || par->token_actual.tipo == TOKEN_MAYOR_IGUAL || par->token_actual.tipo == TOKEN_MENOR_IGUAL || par->token_actual.tipo == TOKEN_NO_IGUAL)
   {
     Tipo_binario op;
     switch ((int) par->token_actual.tipo) {
@@ -171,6 +171,7 @@ Nodo* Parser_comparacion(Parser* par){
       case TOKEN_IGUAL:       op = OP_IGUAL; break;
       case TOKEN_MAYOR_IGUAL: op = OP_MAYOR_IGUAL; break;
       case TOKEN_MENOR_IGUAL: op = OP_MENOR_IGUAL; break;
+      case TOKEN_NO_IGUAL:    op = OP_NO_IGUAL; break;
     }
     Parser_avanzar(par);
     Nodo* der = Parser_expresion(par);
@@ -330,6 +331,52 @@ Nodo* Parser_instruccion(Parser* par){
         nodo = Parser_factor(par);
         Parser_consumir(par, TOKEN_PUNCOMA);
         break;}
+    case TOKEN_VALUES:{
+        Parser_consumir(par, TOKEN_VALUES);
+        Parser_consumir(par, TOKEN_LPAR);
+        Nodo* exp = Parser_expresion(par);
+        Parser_consumir(par, TOKEN_RPAR);
+        Parser_consumir(par, TOKEN_L_LLAV);
+        int defaults = 0;
+        int cantidad_casos = 0;
+        Nodo** casos = malloc(sizeof(Nodo*) * 32);
+        Nodo** bloques = malloc(sizeof(Nodo*) * 32);
+        Nodo* bloque_default = NULL;
+        while(par->token_actual.tipo != TOKEN_R_LLAV){
+          if(par->token_actual.tipo == TOKEN_CASE){
+            Parser_consumir(par, TOKEN_CASE);
+            int inicio = cantidad_casos;
+
+            casos[cantidad_casos++] = Parser_expresion(par);
+            
+            while(par->token_actual.tipo == TOKEN_COMA){
+              Parser_consumir(par, TOKEN_COMA);
+              casos[cantidad_casos++] = Parser_expresion(par);
+            }
+
+            Parser_consumir(par, TOKEN_ASIGNAR);
+            Nodo* bloque_actual = Parser_bloque(par);
+
+            for (int i = inicio; i < cantidad_casos; i++) {
+              bloques[i] = bloque_actual;
+            }
+
+          }
+          else if(par->token_actual.tipo == TOKEN_DEFAULT && !defaults){
+            defaults++;
+            Parser_consumir(par, TOKEN_DEFAULT);
+            Parser_consumir(par, TOKEN_ASIGNAR);
+            bloque_default = Parser_bloque(par);
+          }
+          else{
+            printf("sintaxis incorrecta o más de un default declarado");
+            exit(1);
+          }
+        }
+       Parser_consumir(par, TOKEN_R_LLAV);
+       nodo = Crear_nodo_values(exp, casos, bloques, cantidad_casos, bloque_default); 
+       break;
+      }
     default:
       printf("Error de sintaxis: token inesperado o instrucción no válida\n");
       Print_token(par->token_actual.tipo);

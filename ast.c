@@ -136,6 +136,17 @@ Nodo* Crear_nodo_array_acceso(Nodo* base, Nodo* indice){
   return nodo;
 }
 
+Nodo* Crear_nodo_values(Nodo* expresion, Nodo** casos, Nodo** bloques, int cantidad_casos, Nodo* caso_default){
+  Nodo* nodo = malloc(sizeof(Nodo));
+  nodo->tipo = NODO_VALUES;
+  nodo->valor.values.expresion = expresion;
+  nodo->valor.values.casos = casos;
+  nodo->valor.values.bloques = bloques;
+  nodo->valor.values.cantidad_casos = cantidad_casos;
+  nodo->valor.values.caso_default = caso_default;
+  return nodo;
+}
+
 void Imprimir_ast(Nodo* nodo) {
     if (nodo == NULL) return;
     switch (nodo->tipo) {
@@ -282,6 +293,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                   case OP_MENOR:        ev.valor.entero = izq < der;  break;
                   case OP_MAYOR:        ev.valor.entero = izq > der;  break;
                   case OP_IGUAL:        ev.valor.entero = izq == der; break;
+                  case OP_NO_IGUAL:     ev.valor.entero = izq != der; break;
                   case OP_MENOR_IGUAL:  ev.valor.entero = izq <= der; break;
                   case OP_MAYOR_IGUAL:  ev.valor.entero = izq >= der; break;
                   case OP_AND:          ev.valor.entero = izq && der; break;
@@ -296,6 +308,8 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                                 ev.tipo = STRING; break;
                   case OP_IGUAL: ev.valor.entero = !strcmp(ev_izq.valor.texto, ev_der.valor.texto); 
                                  ev.tipo = ENTERO; break;
+                  case OP_NO_IGUAL: ev.valor.entero = strcmp(ev_izq.valor.texto, ev_der.valor.texto);
+                                  ev.tipo = ENTERO; break;
                   default:
                                 printf("Operación no definida para strings"); exit(1);
                 }
@@ -518,7 +532,16 @@ Nodo** Obtener_referencia_array(Nodo* destino, TablaSimbolos* t, TablaFunciones*
         if (destino->valor.array_acceso.base->tipo == NODO_IDEN) {
             Simbolo* s = Obtener_simbolo_ptr(t, destino->valor.array_acceso.base->valor.iden);
             if (s->tipo == ARRAY) {
-                if (idx >= 0 && idx < s->valor.array.capacidad) {
+                if (idx >= 0) {
+                  if (idx >= s->valor.array.capacidad) {
+                    int nueva_cap = s->valor.array.capacidad;
+                    while(idx >= nueva_cap) nueva_cap *= 2;
+                    s->valor.array.elementos = realloc(s->valor.array.elementos, sizeof(Nodo*) * nueva_cap);
+                    for(int j = s->valor.array.capacidad; j < nueva_cap; j++){
+                      s->valor.array.elementos[j] = Crear_nodo_num(0);
+                    }
+                    s->valor.array.capacidad = nueva_cap;
+                  }
                     if (idx >= s->valor.array.cantidad) {
                         s->valor.array.cantidad = idx + 1;
                     }
@@ -531,7 +554,16 @@ Nodo** Obtener_referencia_array(Nodo* destino, TablaSimbolos* t, TablaFunciones*
             if (ref_base != NULL) {
                 Nodo* nodo_array = *ref_base; 
                 if (nodo_array != NULL && nodo_array->tipo == NODO_ARRAY_INIT) {
-                    if (idx >= 0 && idx < nodo_array->valor.array_init.capacidad) {
+                    if (idx >= 0) {
+                       if (idx >= nodo_array->valor.array_init.capacidad) {
+                         int nueva_cap = nodo_array->valor.array_init.capacidad;
+                         while(idx >= nueva_cap) nueva_cap *= 2;
+                         nodo_array->valor.array_init.elementos = realloc(nodo_array->valor.array_init.elementos, sizeof(Nodo*) * nueva_cap);
+                         for(int j = nodo_array->valor.array_init.capacidad; j < nueva_cap; j++){
+                            nodo_array->valor.array_init.elementos[j] = Crear_nodo_num(0);                            
+                         }
+                        nodo_array->valor.array_init.capacidad = nueva_cap;
+                       } 
                         if (idx >= nodo_array->valor.array_init.cantidad) {
                             nodo_array->valor.array_init.cantidad = idx + 1;
                         }
@@ -577,6 +609,10 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
                     if(base_ev.tipo == STRING){
                         Simbolo* s = Obtener_simbolo_ptr(t, destino->valor.array_acceso.base->valor.iden);
                         s->valor.texto[ind_ev.valor.entero] = ev_t.valor.texto[0];
+                    }
+                    else{
+                      printf("error, asingacion invalida");
+                      exit(1);
                     }
                 }
             }
@@ -652,6 +688,34 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
         case NODO_FUNC_CALL:{
             Evaluador i = Evaluar_expresion(nodo, t, tf);
             break;}
+        case NODO_VALUES:{
+            Evaluador ev_expresion = Evaluar_expresion(nodo->valor.values.expresion, t, tf);
+            int coincidencia = 0;
+
+            for (int i = 0; i < nodo->valor.values.cantidad_casos; i++) {
+              int match = 0;
+              Evaluador ev_caso = Evaluar_expresion(nodo->valor.values.casos[i], t, tf);
+              if(ev_expresion.tipo == ev_caso.tipo){
+                if(ev_expresion.tipo == ENTERO && ev_expresion.valor.entero == ev_caso.valor.entero){
+                  match = 1;
+                }
+                else if(ev_expresion.tipo == STRING && !strcmp(ev_expresion.valor.texto, ev_caso.valor.texto)){
+                  match = 1;
+                }
+              }
+              if (match){
+                coincidencia = 1;
+                Evaluador j = Evaluar_instruccion(nodo->valor.values.bloques[i], t, tf);
+                if(!(j.valor.entero)){ ev.valor.entero = 0; }
+                break;
+              }
+            }
+            if(!coincidencia && nodo->valor.values.caso_default != NULL){
+              Evaluador j = Evaluar_instruccion(nodo->valor.values.caso_default, t, tf);
+              if(!(j.valor.entero)){ ev.valor.entero = 0; }
+            }
+            break;}
+
         default: break;
     }
     return ev;

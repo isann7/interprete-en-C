@@ -76,7 +76,11 @@ Token Obtener_token(Lexer* lex) {
             case '&': t.tipo = TOKEN_AND; Lexer_avanzar(lex); break;
             case '|': t.tipo = TOKEN_OR; Lexer_avanzar(lex); break;
             case '^': t.tipo = TOKEN_XOR; Lexer_avanzar(lex); break;
-            case '~': t.tipo = TOKEN_NOT; Lexer_avanzar(lex); break;
+            case '~':{ 
+                Lexer_avanzar(lex);
+                if(lex->char_actual == '='){ t.tipo = TOKEN_NO_IGUAL; Lexer_avanzar(lex); }
+                else { t.tipo = TOKEN_NOT; };
+                break;}
         }
     }
     else if((isdigit(lex->char_actual))) {
@@ -122,6 +126,9 @@ Token Obtener_token(Lexer* lex) {
         else if(!strcmp("INT", nombre)){ t.tipo = TOKEN_TIPO_INT; }
         else if(!strcmp("STR", nombre)){ t.tipo = TOKEN_TIPO_STR; }
         else if(!strcmp("ARR", nombre)){ t.tipo = TOKEN_TIPO_ARR; }
+        else if(!strcmp("VALUES", nombre)){ t.tipo = TOKEN_VALUES; }
+        else if(!strcmp("CASE", nombre)){ t.tipo = TOKEN_CASE; }
+        else if(!strcmp("DEFAULT", nombre)){ t.tipo = TOKEN_DEFAULT; }
         else {
             t.tipo = TOKEN_IDEN;
             strcpy(t.valor.frase, nombre);

@@ -1,0 +1,26 @@
+
+
+FUNC hola(a(ARR))(r(STR)){
+  VAR x : 0;
+  WHILE(x < LEN(a)){
+    VAR r : r + TO_STRING(a[x]);
+    IF(x < LEN(a) - 1){ VAR r : r + " ";}
+    VAR x : x + 1;
+  }
+}
+
+
+
+VAR x : [];
+VAR i : 0;
+PRINT "cantidad de elementos: ";
+
+VAR c : INPUT;
+
+PRINT "elementos a juntar: ";
+WHILE(i < c){
+  VAR x[i] : INPUT;
+  VAR i : i + 1;
+}
+
+PRINT hola(x);
