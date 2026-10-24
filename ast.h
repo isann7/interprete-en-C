@@ -61,7 +61,7 @@ typedef struct Nodo {
             Tipo_simbolo tipos_param[50];
             Tipo_simbolo tipo_salida;
             struct Nodo* bloque;
-            TablaSimbolos entorno;
+            TablaSimbolos* entorno;
         }func_def;
 
         struct{

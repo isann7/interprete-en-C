@@ -1,26 +1,101 @@
+# --- El Juego de la Vida de Conway ---
 
+FUNC vida(generaciones(INT), ancho(INT), alto(INT))(res(INT)) {
+    VAR tamano : ancho * alto;
+    VAR actual : [];
+    VAR i : 0;
+    
+    # 1. Inicializamos el tablero con ruido aleatorio (0 o 1)
+    WHILE (i < tamano) {
+        VAR actual[i] : RAND(2);
+        VAR i : i + 1;
+    }
 
-FUNC hola(a(ARR))(r(STR)){
-  VAR x : 0;
-  WHILE(x < LEN(a)){
-    VAR r : r + TO_STRING(a[x]);
-    IF(x < LEN(a) - 1){ VAR r : r + " ";}
-    VAR x : x + 1;
-  }
+    VAR g : 0;
+    WHILE (g < generaciones) {
+        # 2. Dibujar el tablero
+        VAR y : 0;
+        WHILE (y < alto) {
+            VAR x : 0;
+            VAR linea : "";
+            WHILE (x < ancho) {
+                VALUES (actual[y * ancho + x]) {
+                    CASE 1: { VAR linea : linea + "██"; }
+                    DEFAULT: { VAR linea : linea + "  "; }
+                }
+                VAR x : x + 1;
+            }
+            PRINT linea;
+            VAR y : y + 1;
+        }
+
+        # 3. Calcular la siguiente generacion
+        VAR siguiente : [];
+        VAR y : 0;
+        WHILE (y < alto) {
+            VAR x : 0;
+            WHILE (x < ancho) {
+                
+                # Contamos los 8 vecinos usando coordenadas relativas
+                VAR vecinos : 0;
+                VAR dy : -1;
+                WHILE (dy <= 1) {
+                    VAR dx : -1;
+                    WHILE (dx <= 1) {
+                        VAR sumar : 1;
+                        IF (dx = 0 & dy = 0) { 
+                            VAR sumar : 0; 
+                        }
+                        
+                        IF (sumar = 1) {
+                            VAR nx : x + dx;
+                            VAR ny : y + dy;
+                            # Comprobamos limites para no salirnos de la memoria
+                            IF (nx >= 0 & nx < ancho & ny >= 0 & ny < alto) {
+                                VAR vecinos : vecinos + actual[ny * ancho + nx];
+                            }
+                        }
+                        VAR dx : dx + 1;
+                    }
+                    VAR dy : dy + 1;
+                }
+
+                # 4. Reglas de Conway (Aprovechando el VALUES anidado)
+                VAR idx : y * ancho + x;
+                VALUES (actual[idx]) {
+                    CASE 1: {
+                        # Viva: Sobrevive solo si tiene 2 o 3 vecinos
+                        VALUES (vecinos) {
+                            CASE 2, 3: { VAR siguiente[idx] : 1; }
+                            DEFAULT: { VAR siguiente[idx] : 0; }
+                        }
+                    }
+                    DEFAULT: {
+                        # Muerta: Nace una nueva si tiene exactamente 3 vecinos
+                        VALUES (vecinos){
+                            CASE 3: { VAR siguiente[idx] : 1; }
+                            DEFAULT: { VAR siguiente[idx] : 0; }
+                        }
+                    }
+                }
+                VAR x : x + 1;
+            }
+            VAR y : y + 1;
+        }
+
+        # 5. Sincronizar el tablero calculando con el actual
+        VAR i : 0;
+        WHILE (i < tamano) {
+            VAR actual[i] : siguiente[i];
+            VAR i : i + 1;
+        }
+        
+        PRINT "--- Generacion " + TO_STRING(g + 1) + " ---";
+        VAR g : g + 1;
+    }
 }
 
-
-
-VAR x : [];
-VAR i : 0;
-PRINT "cantidad de elementos: ";
-
-VAR c : INPUT;
-
-PRINT "elementos a juntar: ";
-WHILE(i < c){
-  VAR x[i] : INPUT;
-  VAR i : i + 1;
-}
-
-PRINT hola(x);
+PRINT "Cuantas generaciones quieres simular?";
+VAR gens : INPUT;
+# Simulamos una cuadricula de 30x15
+vida(gens, 30, 15);

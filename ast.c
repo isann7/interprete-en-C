@@ -99,6 +99,8 @@ Nodo* Crear_nodo_func_def(char* nombre, Tipo_simbolo* tipos_param, char param[][
   nodo->valor.func_def.num_param = num_param;
   nodo->valor.func_def.tipo_salida = tipo_salida;
   nodo->valor.func_def.bloque = bloque;
+  nodo->valor.func_def.entorno = malloc(sizeof(TablaSimbolos));
+  nodo->valor.func_def.entorno->cantidad = 0;
   return nodo;
 }
 
@@ -419,8 +421,8 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
           else{
             Nodo* func_def = f.func_def;
             int i = 0;
-            TablaSimbolos ttemp;
-            Tabla_init(&ttemp);
+            TablaSimbolos* ttemp = malloc(sizeof(TablaSimbolos));
+            Tabla_init(ttemp);
             Contenido v;  
             Tipo_simbolo tipo_init = ENTERO;
             if (func_def->valor.func_def.tipo_salida == STRING) {
@@ -437,27 +439,28 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                 v.entero = 0;
             }
             
-            Guardar_simbolo(&ttemp, func_def->valor.func_def.param_salida, v, tipo_init, 
+            Guardar_simbolo(ttemp, func_def->valor.func_def.param_salida, v, tipo_init, 
                             func_def->valor.func_def.tipo_salida);
             
             while(i < nodo->valor.func_call.num_args){
               Evaluador ev_t = Evaluar_expresion(nodo->valor.func_call.args[i], t, tf);
-              Guardar_simbolo(&ttemp, func_def->valor.func_def.param[i], ev_t.valor, ev_t.tipo, 
+              Guardar_simbolo(ttemp, func_def->valor.func_def.param[i], ev_t.valor, ev_t.tipo, 
                               func_def->valor.func_def.tipos_param[i]);
               i++;
             }
             i = 0;
-            while(i < func_def->valor.func_def.entorno.cantidad){
-              Guardar_simbolo(&ttemp, func_def->valor.func_def.entorno.tabla[i].nombre,
-                                      func_def->valor.func_def.entorno.tabla[i].valor, 
-                                      func_def->valor.func_def.entorno.tabla[i].tipo,
-                                      func_def->valor.func_def.entorno.tabla[i].estricto);
+            while(i < func_def->valor.func_def.entorno->cantidad){
+              Guardar_simbolo(ttemp, func_def->valor.func_def.entorno->tabla[i].nombre,
+                                      func_def->valor.func_def.entorno->tabla[i].valor, 
+                                      func_def->valor.func_def.entorno->tabla[i].tipo,
+                                      func_def->valor.func_def.entorno->tabla[i].estricto);
               i++;
             }
-            Evaluador ev_t = Evaluar_instruccion(func_def->valor.func_def.bloque, &ttemp, tf); 
-            Simbolo s = Obtener_simbolo(&ttemp, func_def->valor.func_def.param_salida);
+            Evaluador ev_t = Evaluar_instruccion(func_def->valor.func_def.bloque, ttemp, tf); 
+            Simbolo s = Obtener_simbolo(ttemp, func_def->valor.func_def.param_salida);
             ev.tipo = s.tipo;
             ev.valor = s.valor;
+            free(ttemp);
             }
             break;} 
         case NODO_STRING:{
@@ -593,11 +596,14 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
             }
             else if(destino->tipo == NODO_ARRAY_ACCESO){
                 Nodo** ref = Obtener_referencia_array(destino, t, tf);
-                if (ref != NULL) {
+                if (ref != NULL && *ref != NULL) {
                     if (ev_t.tipo == ENTERO) {
-                        *ref = Crear_nodo_num(ev_t.valor.entero);
+                        (*ref)->tipo = NODO_NUM;
+                        (*ref)->valor.entero = ev_t.valor.entero;
                     } else if (ev_t.tipo == STRING) {
                         *ref = Crear_nodo_string(ev_t.valor.texto);
+                        (*ref)->tipo = NODO_STRING;
+                        strcpy((*ref)->valor.str, ev_t.valor.texto);
                     } else if (ev_t.tipo == ARRAY) {
                         *ref = Crear_nodo_array_init(ev_t.valor.array.elementos, 
                                                      ev_t.valor.array.cantidad, 
@@ -621,7 +627,7 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
         case NODO_PRINT: { 
             Evaluador result = Evaluar_expresion(nodo->valor.print, t, tf);
             if (result.tipo == STRING) {
-              printf("\"%s\"\n", result.valor.texto);
+              printf("%s\n", result.valor.texto);
             } 
             else if (result.tipo == ENTERO) {
               printf("%d\n", result.valor.entero);
@@ -632,11 +638,11 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
             }
             break;}
         case NODO_BLOQUE: {
-            TablaSimbolos tabla_bloque;
-            tabla_bloque.cantidad = 0;
+            TablaSimbolos* tabla_bloque = malloc(sizeof(TablaSimbolos));;
+            tabla_bloque->cantidad = 0;
 
             for(int i = 0; i < t->cantidad; i++){
-              Guardar_simbolo(&(tabla_bloque),
+              Guardar_simbolo(tabla_bloque,
                               t->tabla[i].nombre,
                               t->tabla[i].valor,
                               t->tabla[i].tipo,
@@ -644,15 +650,16 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
             }
 
             for (int i = 0; i < nodo->valor.bloque.cantidad; i++) {
-               Evaluador j = Evaluar_instruccion(nodo->valor.bloque.instrucciones[i], &tabla_bloque, tf);
+               Evaluador j = Evaluar_instruccion(nodo->valor.bloque.instrucciones[i], tabla_bloque, tf);
                if(!(j.valor.entero)){ ev.valor.entero = 0; break;}
             }
 
             for(int i = 0; i < t->cantidad; i++){
-              Simbolo s = Obtener_simbolo(&tabla_bloque, t->tabla[i].nombre);
+              Simbolo s = Obtener_simbolo(tabla_bloque, t->tabla[i].nombre);
               t->tabla[i].valor = s.valor;
               t->tabla[i].tipo = s.tipo;
             }
+            free(tabla_bloque);
             break;
         }
         case NODO_IF: {
@@ -674,9 +681,9 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
             break;
         } 
         case NODO_FUNC_DEF:{
-            nodo->valor.func_def.entorno.cantidad = 0;
+            nodo->valor.func_def.entorno->cantidad = 0;
             for(int i = 0; i < t->cantidad; i++){
-              Guardar_simbolo(&(nodo->valor.func_def.entorno),
+              Guardar_simbolo(nodo->valor.func_def.entorno,
                               t->tabla[i].nombre,
                               t->tabla[i].valor,
                               t->tabla[i].tipo,

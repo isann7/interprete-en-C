@@ -6,7 +6,7 @@ typedef enum{
 }Tipo_simbolo;
 
 typedef union{
-  char texto[256];
+  char texto[4096];
   int entero;
   struct{
     struct Nodo** elementos;
