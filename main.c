@@ -45,7 +45,7 @@ int main() {
     Tabla_func_init(&funciones);
     Inyectar_func_nativa(&funciones);
     
-    char* codigo_fuente = Leer_archivo("programa.izan");
+    char* codigo_fuente = Leer_archivo("programa.iz");
 
     
     Parser par;
