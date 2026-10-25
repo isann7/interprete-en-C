@@ -417,6 +417,72 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                 ev.valor.entero = rand();
               }
             }
+            else if(!(strcmp(f.nombre, "READ"))){
+              char* ruta = arg.valor.texto;
+              FILE* archivo = fopen(ruta, "r");
+              if(archivo == NULL){
+                printf("No se pudo abrir el archivo '%s'", ruta);
+                strcpy(ev.valor.texto, "");
+                ev.tipo = STRING;
+              }
+              else{
+                fseek(archivo, 0, SEEK_END);
+                long tamaño = ftell(archivo);
+                rewind(archivo);
+
+                char* buffer = malloc(tamaño + 1);
+
+                if(buffer == NULL){
+                  printf("Error al reservar memoria");
+                  exit(1);
+                }
+
+                fread(buffer, 1, tamaño, archivo);
+                buffer[tamaño] = '\0';
+
+                fclose(archivo);
+
+                strncpy(ev.valor.texto, buffer, 4095);
+                ev.valor.texto[4095] = '\0';
+                ev.tipo = STRING;
+                free(buffer);
+              }
+            }
+            else if(!(strcmp(f.nombre, "WRITE"))){ 
+              Evaluador arg2 = Evaluar_expresion(nodo->valor.func_call.args[1], t, tf);
+              char* ruta = arg.valor.texto;
+              char* contenido = arg2.valor.texto;
+              FILE* archivo = fopen(ruta, "w");
+              if(archivo == NULL){
+                printf("No se pudo abrir el archivo '%s'", ruta);
+                ev.tipo = ENTERO;
+                ev.valor.entero = 0;
+              }
+              else{
+                fputs(contenido, archivo);
+                fclose(archivo);
+                ev.tipo = ENTERO;
+                ev.valor.entero = 1;
+              }
+
+            }
+            else if(!(strcmp(f.nombre, "APPEND"))){
+              Evaluador arg2 = Evaluar_expresion(nodo->valor.func_call.args[1], t, tf);
+              char* ruta = arg.valor.texto;
+              char* contenido = arg2.valor.texto;
+              FILE* archivo = fopen(ruta, "a");
+              if(archivo == NULL){
+                printf("No se pudo abrir el archivo '%s'", ruta);
+                ev.tipo = ENTERO;
+                ev.valor.entero = 0;
+              }
+              else{
+                fputs(contenido, archivo);
+                fclose(archivo);
+                ev.tipo = ENTERO;
+                ev.valor.entero = 1;
+              }
+            }
           }
           else{
             Nodo* func_def = f.func_def;

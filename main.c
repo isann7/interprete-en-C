@@ -56,10 +56,10 @@ int main() {
 
     
     while (par.token_actual.tipo != TOKEN_EOF) {
-        Nodo* ast = Parser_instruccion(&par);
-        Evaluar_instruccion(ast, memoria, funciones);
+      Nodo* ast = Parser_instruccion(&par);
+      Evaluar_instruccion(ast, memoria, funciones);
         //Imprimir_ast(ast);
-      if(ast != NULL && ast->tipo == NODO_FUNC_DEF){
+      if(ast != NULL && ast->tipo != NODO_FUNC_DEF){
         Destruir_nodo(ast);
       }
     }

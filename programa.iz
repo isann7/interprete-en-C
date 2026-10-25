@@ -1,7 +1,0 @@
-# --- Benchmark pesado para testear con 'time' ---
-VAR x : 0;
-
-WHILE (x < 1000000) {
-    VAR x : x + 1;
-}
-
