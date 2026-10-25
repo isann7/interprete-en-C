@@ -119,7 +119,8 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf);
 Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf);
 Nodo** Obtener_referencia_array(Nodo* destino, TablaSimbolos* t, TablaFunciones* tf);
 int es_numero_entero(const char* str);
-
+void Destruir_nodo(Nodo* nodo);
+void Borrar_tabla(TablaSimbolos* t);
 void Imprimir_ast(Nodo* nodo);
 
 #endif 

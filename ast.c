@@ -460,6 +460,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
             Simbolo s = Obtener_simbolo(ttemp, func_def->valor.func_def.param_salida);
             ev.tipo = s.tipo;
             ev.valor = s.valor;
+            Borrar_tabla(ttemp); 
             free(ttemp);
             }
             break;} 
@@ -579,6 +580,97 @@ Nodo** Obtener_referencia_array(Nodo* destino, TablaSimbolos* t, TablaFunciones*
     return NULL;
 }
 
+void Borrar_tabla(TablaSimbolos* t){
+  if (t == NULL) return;
+  for (int i = 0; i < t->cantidad; i++) {
+    if (t->tabla[i].tipo == ARRAY) {
+      for (int j = 0; j < t->tabla[i].valor.array.capacidad; j++) {          
+        if (t->tabla[i].valor.array.elementos[j] != NULL) {
+          Destruir_nodo(t->tabla[i].valor.array.elementos[j]);
+        }
+      }
+            free(t->tabla[i].valor.array.elementos);
+    }
+  }
+}
+
+void Destruir_nodo(Nodo* nodo) {
+    if (nodo == NULL) return;
+
+    switch (nodo->tipo) {
+        case NODO_ASIGNAR:
+            Destruir_nodo(nodo->valor.asignacion.destino);
+            Destruir_nodo(nodo->valor.asignacion.Nodo_asignado);
+            break;
+        case NODO_PRINT:
+            Destruir_nodo(nodo->valor.print);
+            break;
+        case NODO_BINARIO:
+            Destruir_nodo(nodo->valor.binario.izq);
+            Destruir_nodo(nodo->valor.binario.der);
+            break;
+        case NODO_NOT:
+            Destruir_nodo(nodo->valor.not);
+            break;
+        case NODO_BLOQUE:
+            for (int i = 0; i < nodo->valor.bloque.cantidad; i++) {
+                Destruir_nodo(nodo->valor.bloque.instrucciones[i]);
+            }
+            break;
+        case NODO_IF:
+        case NODO_WHILE:
+            Destruir_nodo(nodo->valor.condicional.condicion);
+            Destruir_nodo(nodo->valor.condicional.rama_verdadera);
+            if (nodo->valor.condicional.rama_falsa != NULL) {
+                Destruir_nodo(nodo->valor.condicional.rama_falsa);
+            }
+            break;
+        case NODO_FUNC_DEF:
+            Destruir_nodo(nodo->valor.func_def.bloque);
+            if (nodo->valor.func_def.entorno != NULL) {
+                Borrar_tabla(nodo->valor.func_def.entorno); 
+                free(nodo->valor.func_def.entorno);           
+            }
+            break;
+        case NODO_FUNC_CALL:
+            for (int i = 0; i < nodo->valor.func_call.num_args; i++) {
+                Destruir_nodo(nodo->valor.func_call.args[i]);
+            }
+            break;
+        case NODO_ARRAY_INIT:
+            for (int i = 0; i < nodo->valor.array_init.cantidad; i++) {
+                if (nodo->valor.array_init.elementos[i] != NULL) {
+                    Destruir_nodo(nodo->valor.array_init.elementos[i]);
+                }
+            }
+            free(nodo->valor.array_init.elementos); 
+            break;
+        case NODO_ARRAY_ACCESO:
+            Destruir_nodo(nodo->valor.array_acceso.base);
+            Destruir_nodo(nodo->valor.array_acceso.indice);
+            break;
+        case NODO_VALUES:
+            Destruir_nodo(nodo->valor.values.expresion);
+            for (int i = 0; i < nodo->valor.values.cantidad_casos; i++) {
+                Destruir_nodo(nodo->valor.values.casos[i]);
+            }
+            free(nodo->valor.values.casos);
+            free(nodo->valor.values.bloques); 
+            if (nodo->valor.values.caso_default != NULL) {
+                Destruir_nodo(nodo->valor.values.caso_default);
+            }
+            break;
+        case NODO_NUM:
+        case NODO_STRING:
+        case NODO_IDEN:
+        case NODO_INPUT:
+        case NODO_FINISH:
+        default:
+            break;
+    }
+    free(nodo);
+}
+
 Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
     if (nodo == NULL) {
       Evaluador vacio; vacio.tipo = ENTERO; vacio.valor.entero = 1; 
@@ -659,6 +751,7 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
               t->tabla[i].valor = s.valor;
               t->tabla[i].tipo = s.tipo;
             }
+            Borrar_tabla(tabla_bloque);
             free(tabla_bloque);
             break;
         }

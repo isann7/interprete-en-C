@@ -81,3 +81,6 @@ Simbolo* Obtener_simbolo_ptr(TablaSimbolos* t, char* nombre){
   }
   return &(t->tabla[idx]);
 }
+
+
+

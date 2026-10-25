@@ -39,11 +39,11 @@ char* Leer_archivo(const char* ruta) {
 int main() {
     srand(time(NULL)); 
 
-    TablaSimbolos memoria;
-    TablaFunciones funciones;
-    Tabla_init(&memoria);
-    Tabla_func_init(&funciones);
-    Inyectar_func_nativa(&funciones);
+    TablaSimbolos* memoria = malloc(sizeof(TablaSimbolos));
+    TablaFunciones* funciones = malloc(sizeof(TablaFunciones));;
+    Tabla_init(memoria);
+    Tabla_func_init(funciones);
+    Inyectar_func_nativa(funciones);
     
     char* codigo_fuente = Leer_archivo("programa.iz");
 
@@ -57,13 +57,25 @@ int main() {
     
     while (par.token_actual.tipo != TOKEN_EOF) {
         Nodo* ast = Parser_instruccion(&par);
-        Evaluar_instruccion(ast, &memoria, &funciones);
+        Evaluar_instruccion(ast, memoria, funciones);
         //Imprimir_ast(ast);
+      if(ast != NULL && ast->tipo == NODO_FUNC_DEF){
+        Destruir_nodo(ast);
+      }
     }
 
     
     free(par.lex);
     free(codigo_fuente);
+    Borrar_tabla(memoria);
 
+
+    for (int i = 0; i < funciones->cantidad; i++) {
+      if(!funciones->tabla[i].es_nativa && funciones->tabla[i].func_def != NULL){
+        Destruir_nodo(funciones->tabla[i].func_def);
+      }
+    }
+    free(funciones);
+    free(memoria);
     return 0;
 }
