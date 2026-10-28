@@ -1,1 +1,8 @@
 token.txt
+/build/
+/dist/
+*.o
+*.d
+/interprete
+/legacy/treewalk/interprete
+.Rhistory
