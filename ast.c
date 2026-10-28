@@ -293,7 +293,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
             Evaluador ev_izq = Evaluar_expresion(nodo->valor.binario.izq, t, tf);
             Evaluador ev_der = Evaluar_expresion(nodo->valor.binario.der, t, tf);
             if(ev_izq.tipo != ev_der.tipo){
-              printf("intentando operar con tipos distintos");
+              printf("Linea %i: intentando operar con tipos distintos", nodo->linea);
               exit(1);
             }
             else if(ev_izq.tipo == ENTERO){
@@ -609,7 +609,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
             break;
         }
         default:
-            printf("tipo de nodo no valido en expresion\n");
+            printf("Linea %i: tipo de nodo no valido en expresion\n", nodo->linea);
             exit(1);
     }
     return ev;

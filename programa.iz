@@ -2,4 +2,14 @@
 
 
 
+VAR x : [1,2,3];
 
+PRINT x;
+
+VAR y : x;
+
+PRINT y;
+
+VAR y[0] : 3;
+
+PRINT x;
