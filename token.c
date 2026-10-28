@@ -54,11 +54,13 @@ Token Obtener_token(Lexer* lex) {
             case '<':
                 Lexer_avanzar(lex);
                 if(lex->char_actual == '='){ t.tipo = TOKEN_MENOR_IGUAL; Lexer_avanzar(lex); }
+                else if(lex->char_actual == '<'){ t.tipo = TOKEN_L_SHIFT; Lexer_avanzar(lex); }
                 else{ t.tipo = TOKEN_MENOR; }
                 break;
             case '>':
                 Lexer_avanzar(lex);
                 if(lex->char_actual == '='){ t.tipo = TOKEN_MAYOR_IGUAL; Lexer_avanzar(lex); }
+                else if(lex->char_actual == '>'){ t.tipo = TOKEN_R_SHIFT; Lexer_avanzar(lex); }
                 else{ t.tipo = TOKEN_MAYOR; }
                 break;
             case '=':{
@@ -73,9 +75,9 @@ Token Obtener_token(Lexer* lex) {
               }
                      }
             default: Lexer_avanzar(lex); break;
-            case '&': t.tipo = TOKEN_AND; Lexer_avanzar(lex); break;
-            case '|': t.tipo = TOKEN_OR; Lexer_avanzar(lex); break;
-            case '^': t.tipo = TOKEN_XOR; Lexer_avanzar(lex); break;
+            case '&': t.tipo = TOKEN_AND_BITABIT; Lexer_avanzar(lex); break;
+            case '|': t.tipo = TOKEN_OR_BITABIT; Lexer_avanzar(lex); break;
+            case '^': t.tipo = TOKEN_XOR_BITABIT; Lexer_avanzar(lex); break;
             case '~':{ 
                 Lexer_avanzar(lex);
                 if(lex->char_actual == '='){ t.tipo = TOKEN_NO_IGUAL; Lexer_avanzar(lex); }
@@ -115,6 +117,9 @@ Token Obtener_token(Lexer* lex) {
 
     if(!str){
         if(!strcmp("VAR", nombre)){ t.tipo = TOKEN_VAR; }
+        else if(!strcmp("AND", nombre)){ t.tipo = TOKEN_AND; }
+        else if(!strcmp("OR", nombre)){ t.tipo = TOKEN_OR; }
+        else if(!strcmp("XOR", nombre)){ t.tipo = TOKEN_XOR; }
         else if(!strcmp("FUNC", nombre)){ t.tipo = TOKEN_FUNC; }
         else if(!strcmp("PRINT", nombre)){ t.tipo = TOKEN_PRINT; }
         else if(!strcmp("IF", nombre)){ t.tipo = TOKEN_IF; }

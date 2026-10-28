@@ -23,5 +23,6 @@ Nodo* Parser_comparacion(Parser* par);
 Nodo* Parser_logico_and(Parser* par);
 Nodo* Parser_logico_or(Parser* par);
 Nodo* Parser_instruccion(Parser* par);
+Nodo* Parser_or_bitabit(Parser* par);
 
 #endif

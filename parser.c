@@ -159,20 +159,10 @@ Nodo* Parser_expresion(Parser* par){
   return izq;
 }
 
-Nodo* Parser_comparacion(Parser* par){
+Nodo* Parser_shift(Parser* par){
   Nodo* izq = Parser_expresion(par);
-  while(par->token_actual.tipo == TOKEN_MENOR || par->token_actual.tipo == TOKEN_MAYOR || par->token_actual.tipo == TOKEN_IGUAL 
-        || par->token_actual.tipo == TOKEN_MAYOR_IGUAL || par->token_actual.tipo == TOKEN_MENOR_IGUAL || par->token_actual.tipo == TOKEN_NO_IGUAL)
-  {
-    Tipo_binario op;
-    switch ((int) par->token_actual.tipo) {
-      case TOKEN_MENOR:       op = OP_MENOR; break;
-      case TOKEN_MAYOR:       op = OP_MAYOR; break;
-      case TOKEN_IGUAL:       op = OP_IGUAL; break;
-      case TOKEN_MAYOR_IGUAL: op = OP_MAYOR_IGUAL; break;
-      case TOKEN_MENOR_IGUAL: op = OP_MENOR_IGUAL; break;
-      case TOKEN_NO_IGUAL:    op = OP_NO_IGUAL; break;
-    }
+  while(par->token_actual.tipo == TOKEN_L_SHIFT || par->token_actual.tipo == TOKEN_R_SHIFT){
+    Tipo_binario op = (par->token_actual.tipo == TOKEN_L_SHIFT ? OP_L_SHIFT : OP_R_SHIFT);
     Parser_avanzar(par);
     Nodo* der = Parser_expresion(par);
     izq = Crear_nodo_binario(op, izq, der);
@@ -180,11 +170,70 @@ Nodo* Parser_comparacion(Parser* par){
   return izq;
 }
 
-Nodo* Parser_logico_and(Parser* par){
+Nodo* Parser_comparacion(Parser* par){
+  Nodo* izq = Parser_shift(par);
+  while(par->token_actual.tipo == TOKEN_MENOR || par->token_actual.tipo == TOKEN_MAYOR || par->token_actual.tipo == TOKEN_MAYOR_IGUAL || par->token_actual.tipo == TOKEN_MENOR_IGUAL)
+  {
+    Tipo_binario op;
+    switch ((int) par->token_actual.tipo) {
+      case TOKEN_MENOR:       op = OP_MENOR; break;
+      case TOKEN_MAYOR:       op = OP_MAYOR; break;
+      case TOKEN_MAYOR_IGUAL: op = OP_MAYOR_IGUAL; break;
+      case TOKEN_MENOR_IGUAL: op = OP_MENOR_IGUAL; break;
+    }
+    Parser_avanzar(par);
+    Nodo* der = Parser_shift(par);
+    izq = Crear_nodo_binario(op, izq, der);
+  }
+  return izq;
+}
+
+Nodo* Parser_igualdad(Parser* par){
   Nodo* izq = Parser_comparacion(par);
-  while(par->token_actual.tipo == TOKEN_AND){
+  while(par->token_actual.tipo == TOKEN_IGUAL || par->token_actual.tipo == TOKEN_NO_IGUAL){ 
+    Tipo_binario op = (par->token_actual.tipo == TOKEN_IGUAL ? OP_IGUAL : OP_NO_IGUAL);
     Parser_avanzar(par);
     Nodo* der = Parser_comparacion(par);
+    izq = Crear_nodo_binario(op, izq, der);
+  }
+  return izq;
+}
+
+Nodo* Parser_and_bitabit(Parser* par){
+  Nodo* izq = Parser_igualdad(par);
+  while(par->token_actual.tipo == TOKEN_AND_BITABIT){
+    Parser_avanzar(par);
+    Nodo* der = Parser_igualdad(par);
+    izq = Crear_nodo_binario(OP_AND_BITABIT, izq, der);
+  }
+  return izq;
+}
+
+Nodo* Parser_xor_bitabit(Parser* par){
+  Nodo* izq = Parser_and_bitabit(par);
+  while(par->token_actual.tipo == TOKEN_XOR_BITABIT){
+    Parser_avanzar(par);
+    Nodo* der = Parser_and_bitabit(par);
+    izq = Crear_nodo_binario(OP_XOR_BITABIT, izq, der);
+  }
+  return izq;
+}
+
+Nodo* Parser_or_bitabit(Parser* par){
+  Nodo* izq = Parser_xor_bitabit(par);
+  while(par->token_actual.tipo == TOKEN_OR_BITABIT){
+    Parser_avanzar(par);
+    Nodo* der = Parser_xor_bitabit(par);
+    izq = Crear_nodo_binario(OP_OR_BITABIT, izq, der);
+  }
+  return izq;
+}
+
+Nodo* Parser_logico_and(Parser* par){
+  Nodo* izq = Parser_or_bitabit(par);
+  while(par->token_actual.tipo == TOKEN_AND){
+    Parser_avanzar(par);
+    Nodo* der = Parser_or_bitabit(par);
     izq = Crear_nodo_binario(OP_AND, izq, der);
   }
   return izq;

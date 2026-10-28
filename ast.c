@@ -301,6 +301,11 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                   case OP_AND:          ev.valor.entero = izq && der; break;
                   case OP_OR:           ev.valor.entero = izq || der; break;
                   case OP_XOR:          ev.valor.entero = izq ^ der;  break;
+                  case OP_L_SHIFT:      ev.valor.entero = izq << der; break;
+                  case OP_R_SHIFT:      ev.valor.entero = izq >> der; break;
+                  case OP_AND_BITABIT:  ev.valor.entero = izq & der;  break;
+                  case OP_XOR_BITABIT:  ev.valor.entero = izq ^ der;  break;
+                  case OP_OR_BITABIT:   ev.valor.entero = izq | der;  break;
                   default: break;
               }
             }
@@ -817,7 +822,17 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
               t->tabla[i].valor = s.valor;
               t->tabla[i].tipo = s.tipo;
             }
-            Borrar_tabla(tabla_bloque);
+            for (int i = t->cantidad; i < tabla_bloque->cantidad; i++) {
+                if (tabla_bloque->tabla[i].tipo == ARRAY) {
+                    for (int j = 0; j < tabla_bloque->tabla[i].valor.array.capacidad; j++) {          
+                        if (tabla_bloque->tabla[i].valor.array.elementos[j] != NULL) {
+                            Destruir_nodo(tabla_bloque->tabla[i].valor.array.elementos[j]);
+                        }
+                    }
+                    free(tabla_bloque->tabla[i].valor.array.elementos);
+                }
+            }
+            
             free(tabla_bloque);
             break;
         }
