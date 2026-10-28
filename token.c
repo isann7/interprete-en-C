@@ -15,18 +15,23 @@ void Lexer_avanzar(Lexer* lex) {
     lex->char_actual = lex->fuente[lex->pos_actual];
 }
 
-Token Obtener_token(Lexer* lex) {
+Token Obtener_token(Lexer* lex, int* linea_actual) {
     Token t;
     if(lex->char_actual == '\0'){
         t.tipo = TOKEN_EOF;
+        t.linea = *linea_actual;
         return t;
     }
     while (lex->char_actual == ' ' || lex->char_actual == '\t' || lex->char_actual == '\n') {
-        Lexer_avanzar(lex);
+      if(lex->char_actual == '\n'){
+        (*linea_actual)++;
+      }   
+      Lexer_avanzar(lex);
     }
 
     if(lex->char_actual == '\0'){
         t.tipo = TOKEN_EOF;
+        t.linea = *linea_actual;
         return t;
     }
 
@@ -50,7 +55,7 @@ Token Obtener_token(Lexer* lex) {
                 while(lex->char_actual != '\n' && lex->char_actual != '\0'){
                   Lexer_avanzar(lex);      
                 }
-                return Obtener_token(lex);}
+                return Obtener_token(lex, linea_actual);}
             case '<':
                 Lexer_avanzar(lex);
                 if(lex->char_actual == '='){ t.tipo = TOKEN_MENOR_IGUAL; Lexer_avanzar(lex); }
@@ -143,6 +148,7 @@ Token Obtener_token(Lexer* lex) {
         strcpy(t.valor.frase, nombre);
     } 
    }
+    t.linea = *linea_actual;
     return t;
 }
 

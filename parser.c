@@ -5,11 +5,14 @@
 
 void Parser_init(Parser* par, char* fuente){
   Lexer_init(par->lex, fuente);
-  par->token_actual = Obtener_token(par->lex);  
+  int linea_inicial = 1; 
+  par->token_actual = Obtener_token(par->lex, &linea_inicial);  
 } 
 
 void Parser_avanzar(Parser* par){
-  par->token_actual = Obtener_token(par->lex);
+  int linea_estado = par->token_actual.linea;
+  par->linea_previa = linea_estado;
+  par->token_actual = Obtener_token(par->lex, &linea_estado);
 }
 
 void Parser_consumir(Parser* par, Tipo_token tipo_esperado){
@@ -17,21 +20,22 @@ void Parser_consumir(Parser* par, Tipo_token tipo_esperado){
     Parser_avanzar(par);
   }
   else{
-    printf("error, token esperado: "); 
+    printf("Linea %i: error, token esperado: ", par->linea_previa); 
     Print_token(tipo_esperado);
     printf("token recibido: ");
-    Print_token(par->token_actual.tipo);
+    Print_token(par->linea_previa);
     exit(1);
   }
 }
 
 Nodo* Parser_bloque(Parser* par){
+  int linea = par->token_actual.linea; 
   Parser_consumir(par, TOKEN_L_LLAV);
-  Nodo* nodo = Crear_nodo_bloque();
+  Nodo* nodo = Crear_nodo_bloque(linea);
   int len = sizeof(nodo->valor.bloque.instrucciones) / sizeof(Nodo*);
   for(;par->token_actual.tipo != TOKEN_R_LLAV; nodo->valor.bloque.cantidad++){
     if(nodo->valor.bloque.cantidad >= len && par->token_actual.tipo != TOKEN_R_LLAV){
-      printf("error, demasiadas instrucciones dentro del condicional, instrucciones máximas: %d\n", len); 
+      printf("Linea %d: error, demasiadas instrucciones dentro del condicional, instrucciones máximas: %d\n", par->token_actual.linea, len); 
       exit(2);      
     }
     nodo->valor.bloque.instrucciones[nodo->valor.bloque.cantidad] = Parser_instruccion(par);  
@@ -45,12 +49,14 @@ Nodo* Parser_factor(Parser* par){
   switch ((int) par->token_actual.tipo) {
     case TOKEN_NUM:{
       int valor = par->token_actual.valor.entero;
+      int linea = par->token_actual.linea;
       Parser_consumir(par, TOKEN_NUM);
-      nodo = Crear_nodo_num(valor);
+      nodo = Crear_nodo_num(valor, linea);
       break;}
     case TOKEN_IDEN:{
       char nombre[50];
       strcpy(nombre, par->token_actual.valor.frase); 
+      int linea = par->token_actual.linea;
       Parser_consumir(par, TOKEN_IDEN);
       if(par->token_actual.tipo == TOKEN_LPAR){ 
         Parser_consumir(par, TOKEN_LPAR); 
@@ -64,27 +70,28 @@ Nodo* Parser_factor(Parser* par){
           }
         } 
         Parser_consumir(par, TOKEN_RPAR);  
-        nodo = Crear_nodo_func_call(nombre, argumentos, i);
+        nodo = Crear_nodo_func_call(nombre, argumentos, i, linea);
       }
       else if(par->token_actual.tipo == TOKEN_L_CORCHETE){
-        nodo = Crear_nodo_iden(nombre);
+        nodo = Crear_nodo_iden(nombre, linea);
         Parser_consumir(par, TOKEN_L_CORCHETE);
         Nodo* indice = Parser_logico_or(par);
-        nodo = Crear_nodo_array_acceso(nodo, indice);
+        nodo = Crear_nodo_array_acceso(nodo, indice, linea);
 
         while(par->token_actual.tipo == TOKEN_COMA){
           Parser_consumir(par, TOKEN_COMA);
           indice = Parser_logico_or(par);
-          nodo = Crear_nodo_array_acceso(nodo, indice);
+          nodo = Crear_nodo_array_acceso(nodo, indice, linea);
         }
         Parser_consumir(par, TOKEN_R_CORCHETE);
       }
       else{  
-        nodo = Crear_nodo_iden(nombre);
+        nodo = Crear_nodo_iden(nombre, linea);
       }
       break;
     } 
     case TOKEN_L_CORCHETE:{
+        int linea = par->token_actual.linea;
         Parser_consumir(par, TOKEN_L_CORCHETE); 
         int capacidad = 10;
         int cantidad = 0;
@@ -100,7 +107,7 @@ Nodo* Parser_factor(Parser* par){
           n[cantidad++] = Parser_logico_or(par);
         }
         Parser_consumir(par, TOKEN_R_CORCHETE);
-        nodo = Crear_nodo_array_init(n, cantidad, capacidad);
+        nodo = Crear_nodo_array_init(n, cantidad, capacidad, linea);
         break;}
     case TOKEN_LPAR:{
       Parser_consumir(par, TOKEN_LPAR);
@@ -110,23 +117,27 @@ Nodo* Parser_factor(Parser* par){
     case TOKEN_STRING:{
       char texto[256];
       strcpy(texto, par->token_actual.valor.frase);
+      int linea = par->token_actual.linea;
       Parser_consumir(par, TOKEN_STRING);
-      nodo = Crear_nodo_string(texto);
+      nodo = Crear_nodo_string(texto, linea);
       break;}
     case TOKEN_NOT:{
+      int linea = par->token_actual.linea;
       Parser_consumir(par, TOKEN_NOT);
       Nodo* exp = Parser_factor(par);
-      nodo = Crear_nodo_not(exp);
+      nodo = Crear_nodo_not(exp, linea);
       break;}
     case TOKEN_INPUT:{
+      int linea = par->token_actual.linea;
       Parser_consumir(par, TOKEN_INPUT);
-      nodo = Crear_nodo_input();
+      nodo = Crear_nodo_input(linea);
       break;}
     case TOKEN_MENOS:{
+      int linea = par->token_actual.linea;
       Parser_consumir(par, TOKEN_MENOS);
-      Nodo* cero = Crear_nodo_num(0);
+      Nodo* cero = Crear_nodo_num(0, linea);
       Nodo* valor = Parser_factor(par);
-      nodo = Crear_nodo_binario(OP_RESTA, cero, valor);
+      nodo = Crear_nodo_binario(OP_RESTA, cero, valor, linea);
       break;}
   }
   return nodo;
@@ -136,6 +147,7 @@ Nodo* Parser_termino(Parser* par){
   Nodo* izq = Parser_factor(par);
   while(par->token_actual.tipo == TOKEN_MUL || par->token_actual.tipo == TOKEN_DIV || par->token_actual.tipo == TOKEN_RESTO){
     Tipo_binario op;
+    int linea = par->token_actual.linea;
     switch ((int) par->token_actual.tipo) {
       case TOKEN_MUL: op = OP_MUL; break;
       case TOKEN_DIV: op = OP_DIV; break;
@@ -143,7 +155,7 @@ Nodo* Parser_termino(Parser* par){
     }
     Parser_avanzar(par);
     Nodo* der = Parser_factor(par);
-    izq = Crear_nodo_binario(op, izq, der);
+    izq = Crear_nodo_binario(op, izq, der, linea);
   }
   return izq;
 }
@@ -152,9 +164,10 @@ Nodo* Parser_expresion(Parser* par){
   Nodo* izq = Parser_termino(par); 
   while (par->token_actual.tipo == TOKEN_MAS || par->token_actual.tipo == TOKEN_MENOS) { 
     Tipo_binario op = (par->token_actual.tipo == TOKEN_MAS ? OP_SUMA : OP_RESTA);
+    int linea = par->token_actual.linea;
     Parser_avanzar(par);
     Nodo* der = Parser_termino(par);
-    izq = Crear_nodo_binario(op, izq, der);
+    izq = Crear_nodo_binario(op, izq, der, linea);
   }
   return izq;
 }
@@ -163,9 +176,10 @@ Nodo* Parser_shift(Parser* par){
   Nodo* izq = Parser_expresion(par);
   while(par->token_actual.tipo == TOKEN_L_SHIFT || par->token_actual.tipo == TOKEN_R_SHIFT){
     Tipo_binario op = (par->token_actual.tipo == TOKEN_L_SHIFT ? OP_L_SHIFT : OP_R_SHIFT);
+    int linea = par->token_actual.linea;
     Parser_avanzar(par);
     Nodo* der = Parser_expresion(par);
-    izq = Crear_nodo_binario(op, izq, der);
+    izq = Crear_nodo_binario(op, izq, der, linea);
   }
   return izq;
 }
@@ -175,6 +189,7 @@ Nodo* Parser_comparacion(Parser* par){
   while(par->token_actual.tipo == TOKEN_MENOR || par->token_actual.tipo == TOKEN_MAYOR || par->token_actual.tipo == TOKEN_MAYOR_IGUAL || par->token_actual.tipo == TOKEN_MENOR_IGUAL)
   {
     Tipo_binario op;
+    int linea = par->token_actual.linea;
     switch ((int) par->token_actual.tipo) {
       case TOKEN_MENOR:       op = OP_MENOR; break;
       case TOKEN_MAYOR:       op = OP_MAYOR; break;
@@ -183,7 +198,7 @@ Nodo* Parser_comparacion(Parser* par){
     }
     Parser_avanzar(par);
     Nodo* der = Parser_shift(par);
-    izq = Crear_nodo_binario(op, izq, der);
+    izq = Crear_nodo_binario(op, izq, der, linea);
   }
   return izq;
 }
@@ -192,9 +207,10 @@ Nodo* Parser_igualdad(Parser* par){
   Nodo* izq = Parser_comparacion(par);
   while(par->token_actual.tipo == TOKEN_IGUAL || par->token_actual.tipo == TOKEN_NO_IGUAL){ 
     Tipo_binario op = (par->token_actual.tipo == TOKEN_IGUAL ? OP_IGUAL : OP_NO_IGUAL);
+    int linea = par->token_actual.linea;
     Parser_avanzar(par);
     Nodo* der = Parser_comparacion(par);
-    izq = Crear_nodo_binario(op, izq, der);
+    izq = Crear_nodo_binario(op, izq, der, linea);
   }
   return izq;
 }
@@ -202,9 +218,10 @@ Nodo* Parser_igualdad(Parser* par){
 Nodo* Parser_and_bitabit(Parser* par){
   Nodo* izq = Parser_igualdad(par);
   while(par->token_actual.tipo == TOKEN_AND_BITABIT){
+    int linea = par->token_actual.linea;
     Parser_avanzar(par);
     Nodo* der = Parser_igualdad(par);
-    izq = Crear_nodo_binario(OP_AND_BITABIT, izq, der);
+    izq = Crear_nodo_binario(OP_AND_BITABIT, izq, der, linea);
   }
   return izq;
 }
@@ -212,9 +229,10 @@ Nodo* Parser_and_bitabit(Parser* par){
 Nodo* Parser_xor_bitabit(Parser* par){
   Nodo* izq = Parser_and_bitabit(par);
   while(par->token_actual.tipo == TOKEN_XOR_BITABIT){
+    int linea = par->token_actual.linea;
     Parser_avanzar(par);
     Nodo* der = Parser_and_bitabit(par);
-    izq = Crear_nodo_binario(OP_XOR_BITABIT, izq, der);
+    izq = Crear_nodo_binario(OP_XOR_BITABIT, izq, der, linea);
   }
   return izq;
 }
@@ -222,9 +240,10 @@ Nodo* Parser_xor_bitabit(Parser* par){
 Nodo* Parser_or_bitabit(Parser* par){
   Nodo* izq = Parser_xor_bitabit(par);
   while(par->token_actual.tipo == TOKEN_OR_BITABIT){
+    int linea = par->token_actual.linea;
     Parser_avanzar(par);
     Nodo* der = Parser_xor_bitabit(par);
-    izq = Crear_nodo_binario(OP_OR_BITABIT, izq, der);
+    izq = Crear_nodo_binario(OP_OR_BITABIT, izq, der, linea);
   }
   return izq;
 }
@@ -232,9 +251,10 @@ Nodo* Parser_or_bitabit(Parser* par){
 Nodo* Parser_logico_and(Parser* par){
   Nodo* izq = Parser_or_bitabit(par);
   while(par->token_actual.tipo == TOKEN_AND){
+    int linea = par->token_actual.linea;
     Parser_avanzar(par);
     Nodo* der = Parser_or_bitabit(par);
-    izq = Crear_nodo_binario(OP_AND, izq, der);
+    izq = Crear_nodo_binario(OP_AND, izq, der, linea);
   }
   return izq;
 }
@@ -243,9 +263,10 @@ Nodo* Parser_logico_or(Parser* par){
   Nodo* izq = Parser_logico_and(par);
   while(par->token_actual.tipo == TOKEN_OR || par->token_actual.tipo == TOKEN_XOR){
     Tipo_binario op = par->token_actual.tipo == TOKEN_OR ? OP_OR : OP_XOR;
+    int linea = par->token_actual.linea;
     Parser_avanzar(par); 
     Nodo* der = Parser_logico_and(par);
-    izq = Crear_nodo_binario(op, izq, der);
+    izq = Crear_nodo_binario(op, izq, der, linea);
   }
   return izq;
 }
@@ -268,7 +289,7 @@ Tipo_simbolo Parser_leer_tipo_opcional(Parser* par){
       Parser_avanzar(par);
     }
     else{
-      printf("Error sintáctico, se esperaba un tipo valido\n");
+      printf("Linea %d: Error sintáctico, se esperaba un tipo valido\n", par->token_actual.linea);
     }
     Parser_consumir(par, TOKEN_RPAR);
   }
@@ -279,6 +300,7 @@ Nodo* Parser_instruccion(Parser* par){
   Nodo* nodo; 
   switch ((int) par->token_actual.tipo) {
     case TOKEN_VAR:{
+      int linea = par->token_actual.linea;
       Parser_consumir(par, TOKEN_VAR);
       char nombre[50];
       Nodo* indice = NULL;
@@ -286,17 +308,17 @@ Nodo* Parser_instruccion(Parser* par){
       Parser_consumir(par, TOKEN_IDEN);
 
       Tipo_simbolo tipo_estricto = Parser_leer_tipo_opcional(par);
-      Nodo* destino = Crear_nodo_iden(nombre);
+      Nodo* destino = Crear_nodo_iden(nombre, linea);
 
       if(par->token_actual.tipo == TOKEN_L_CORCHETE){
         Parser_consumir(par, TOKEN_L_CORCHETE);
         indice = Parser_logico_or(par);
-        destino = Crear_nodo_array_acceso(destino, indice);
+        destino = Crear_nodo_array_acceso(destino, indice, linea);
       
         while(par->token_actual.tipo == TOKEN_COMA){
           Parser_consumir(par, TOKEN_COMA);
           indice = Parser_logico_or(par);
-          destino = Crear_nodo_array_acceso(destino, indice);
+          destino = Crear_nodo_array_acceso(destino, indice, linea);
         }
         Parser_consumir(par, TOKEN_R_CORCHETE);
       }
@@ -304,17 +326,19 @@ Nodo* Parser_instruccion(Parser* par){
       Parser_consumir(par, TOKEN_ASIGNAR);
       Nodo* exp = Parser_logico_or(par);
       Parser_consumir(par, TOKEN_PUNCOMA);
-      nodo = Crear_nodo_asig(destino, exp, tipo_estricto);
+      nodo = Crear_nodo_asig(destino, exp, tipo_estricto, linea);
       break;}
     case TOKEN_PRINT:{
+      int linea = par->token_actual.linea;
       Parser_consumir(par, TOKEN_PRINT);
       Nodo* exp = Parser_logico_or(par);
       Parser_consumir(par, TOKEN_PUNCOMA);
-      nodo = Crear_nodo_print(exp);
+      nodo = Crear_nodo_print(exp, linea);
       break;} 
     case TOKEN_IF:
     case TOKEN_WHILE:{
       Tipo_token tipo_actual = par->token_actual.tipo;
+      int linea = par->token_actual.linea;
       Parser_consumir(par, tipo_actual);
       Nodo* condicion = Parser_logico_or(par);
       Nodo* bloque_verdadero = Parser_bloque(par);
@@ -328,13 +352,14 @@ Nodo* Parser_instruccion(Parser* par){
           bloque_falso = Parser_instruccion(par);
         }
         else {
-          printf("Error sintactico: Se esperaba '{' o 'IF' despues de 'IFNOT'.\n");
+          printf("Linea %d: Error sintactico: Se esperaba '{' o 'IF' despues de 'IFNOT'.\n", par->token_actual.linea);
           exit(1);
         }
       } 
-      nodo = Crear_nodo_if_while(condicion, bloque_verdadero, bloque_falso, tipo_actual);
+      nodo = Crear_nodo_if_while(condicion, bloque_verdadero, bloque_falso, tipo_actual, linea);
       break;}   
     case TOKEN_FUNC:{
+        int linea = par->token_actual.linea;
         Parser_consumir(par, TOKEN_FUNC);
         char nombre[50];
         strcpy(nombre, par->token_actual.valor.frase);
@@ -354,7 +379,7 @@ Nodo* Parser_instruccion(Parser* par){
             i++;
           }
           else{
-            printf("Parametros no validos");
+            printf("Linea %d: Parametros no validos\n", par->token_actual.linea);
             exit(1);
           }
         }
@@ -369,18 +394,20 @@ Nodo* Parser_instruccion(Parser* par){
         } 
         Parser_consumir(par, TOKEN_RPAR);
         Nodo* bloque = Parser_bloque(par);
-        nodo = Crear_nodo_func_def(nombre, tipos_param, param, tipo_salida, param_salida, i, bloque);
+        nodo = Crear_nodo_func_def(nombre, tipos_param, param, tipo_salida, param_salida, i, bloque, linea);
         break;}
     case TOKEN_FINISH:{
+        int linea = par->token_actual.linea;
         Parser_consumir(par, TOKEN_FINISH);
         Parser_consumir(par, TOKEN_PUNCOMA);
-        nodo = Crear_nodo_finish();
+        nodo = Crear_nodo_finish(linea);
         break;}
     case TOKEN_IDEN:{
         nodo = Parser_factor(par);
         Parser_consumir(par, TOKEN_PUNCOMA);
         break;}
     case TOKEN_VALUES:{
+        int linea = par->token_actual.linea;
         Parser_consumir(par, TOKEN_VALUES);
         Parser_consumir(par, TOKEN_LPAR);
         Nodo* exp = Parser_expresion(par);
@@ -406,7 +433,7 @@ Nodo* Parser_instruccion(Parser* par){
             Parser_consumir(par, TOKEN_ASIGNAR);
             Nodo* bloque_actual = Parser_bloque(par);
 
-            for (int i = inicio; i < cantidad_casos; i++) {
+            for (int i = inicio; i < cantidad_casos; i++) { 
               bloques[i] = bloque_actual;
             }
 
@@ -418,16 +445,16 @@ Nodo* Parser_instruccion(Parser* par){
             bloque_default = Parser_bloque(par);
           }
           else{
-            printf("sintaxis incorrecta o más de un default declarado");
+            printf("Linea %d: sintaxis incorrecta o más de un default declarado\n", par->token_actual.linea);
             exit(1);
           }
         }
        Parser_consumir(par, TOKEN_R_LLAV);
-       nodo = Crear_nodo_values(exp, casos, bloques, cantidad_casos, bloque_default); 
+       nodo = Crear_nodo_values(exp, casos, bloques, cantidad_casos, bloque_default, linea); 
        break;
       }
     default:
-      printf("Error de sintaxis: token inesperado o instrucción no válida\n");
+      printf("Linea %d: Error de sintaxis: token inesperado o instrucción no válida\n", par->token_actual.linea);
       Print_token(par->token_actual.tipo);
       exit(1);
   }

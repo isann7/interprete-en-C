@@ -46,7 +46,6 @@ int main() {
     Inyectar_func_nativa(funciones);
     
     char* codigo_fuente = Leer_archivo("programa.iz");
-
     
     Parser par;
     par.lex = malloc(sizeof(Lexer));

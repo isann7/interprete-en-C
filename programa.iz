@@ -1,20 +1,5 @@
 
 
-FUNC isPowerOfFour(n(INT))(r(INT)){
-  IF(~n){ VAR r : 0; FINISH; }
-  WHILE(~(n&1)){
-    IF(~(n&1)){ VAR n : n >> 1; }
-    IFNOT{ VAR r : 0; FINISH; }
-  }
-  VAR r : n = 1;
-  FINISH;
-}
-
-
-
-VAR x : INPUT; 
-
-PRINT isPowerOfFour(x);
 
 
 

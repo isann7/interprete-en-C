@@ -31,13 +31,13 @@ void mutar_elementos_array(Nodo** elementos, int cantidad, Tipo_simbolo tipo_a_m
     else if(elementos[i]->tipo == NODO_STRING && tipo_a_mutar == ENTERO){
       int num = atoi(elementos[i]->valor.str);
       free(elementos[i]);
-      elementos[i] = Crear_nodo_num(num);
+      elementos[i] = Crear_nodo_num(num, elementos[i]->linea);
     }
     else if(elementos[i]->tipo == NODO_NUM && tipo_a_mutar == STRING){ 
       char str[256];
       sprintf(str, "%d", elementos[i]->valor.entero);
       free(elementos[i]);
-      elementos[i] = Crear_nodo_string(str);
+      elementos[i] = Crear_nodo_string(str, elementos[i]->linea);
     }
   }
 }

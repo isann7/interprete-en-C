@@ -5,54 +5,60 @@
 #include "funciones_recursivas.h"
 #include <ctype.h>
 
-Nodo* Crear_nodo_num(int num) {
+Nodo* Crear_nodo_num(int num, int linea) {
     Nodo* nodo = malloc(sizeof(Nodo));
     nodo->tipo = NODO_NUM;
     nodo->valor.entero = num;
+    nodo->linea = linea;
     return nodo;
 }
 
-Nodo* Crear_nodo_asig(Nodo* destino, Nodo* expresion, Tipo_simbolo estricto) {
+Nodo* Crear_nodo_asig(Nodo* destino, Nodo* expresion, Tipo_simbolo estricto, int linea) {
     Nodo* nodo = malloc(sizeof(Nodo));
     nodo->tipo = NODO_ASIGNAR;
     nodo->valor.asignacion.Nodo_asignado = expresion;
     nodo->valor.asignacion.destino = destino;
     nodo->valor.asignacion.estricto = estricto;
+    nodo->linea = linea;
     return nodo;
 }
 
-Nodo* Crear_nodo_print(Nodo* n) {
+Nodo* Crear_nodo_print(Nodo* n, int linea) {
     Nodo* nodo = malloc(sizeof(Nodo));
     nodo->tipo = NODO_PRINT;
     nodo->valor.print = n;
+    nodo->linea = linea;
     return nodo;
 }
 
-Nodo* Crear_nodo_iden(char* nombre) {
+Nodo* Crear_nodo_iden(char* nombre, int linea) {
     Nodo* nodo = malloc(sizeof(Nodo));
     nodo->tipo = NODO_IDEN;
     strcpy(nodo->valor.iden, nombre);
+    nodo->linea = linea;
     return nodo;
 }
 
-Nodo* Crear_nodo_binario(Tipo_binario b, Nodo* izquierda, Nodo* derecha) {
+Nodo* Crear_nodo_binario(Tipo_binario b, Nodo* izquierda, Nodo* derecha, int linea) {
     Nodo* nodo = malloc(sizeof(Nodo));
     nodo->tipo = NODO_BINARIO;
     nodo->valor.binario.izq = izquierda;
     nodo->valor.binario.der = derecha;
     nodo->valor.binario.tipo = b;
+    nodo->linea = linea;
     return nodo;
 }
 
-Nodo* Crear_nodo_bloque(void) {
+Nodo* Crear_nodo_bloque(int linea) {
     Nodo* nodo = malloc(sizeof(Nodo));
     nodo->tipo = NODO_BLOQUE;
     nodo->valor.bloque.cantidad = 0;
     memset(&(nodo->valor.bloque.instrucciones), 0, sizeof(nodo->valor.bloque.instrucciones));
+    nodo->linea = linea;
     return nodo;
 }
 
-Nodo* Crear_nodo_if_while(Nodo* cond, Nodo* rama_verd, Nodo* rama_falsa, Tipo_token tipo) {
+Nodo* Crear_nodo_if_while(Nodo* cond, Nodo* rama_verd, Nodo* rama_falsa, Tipo_token tipo, int linea) {
     Nodo* nodo = malloc(sizeof(Nodo));
     Tipo_nodo t;
     switch ((int) tipo) {
@@ -63,31 +69,35 @@ Nodo* Crear_nodo_if_while(Nodo* cond, Nodo* rama_verd, Nodo* rama_falsa, Tipo_to
     nodo->valor.condicional.condicion = cond;
     nodo->valor.condicional.rama_verdadera = rama_verd;
     nodo->valor.condicional.rama_falsa = rama_falsa;
+    nodo->linea = linea;
     return nodo;
 }
 
-Nodo* Crear_nodo_string(char* nombre){
+Nodo* Crear_nodo_string(char* nombre, int linea){
   Nodo* nodo = malloc(sizeof(Nodo));
   nodo->tipo = NODO_STRING;
   strcpy(nodo->valor.str, nombre);
+  nodo->linea = linea;
   return nodo;
 }
 
-Nodo* Crear_nodo_not(Nodo* expresion){
+Nodo* Crear_nodo_not(Nodo* expresion, int linea){
   Nodo* nodo = malloc(sizeof(Nodo));
   nodo->tipo = NODO_NOT;
   nodo->valor.not = expresion;
+  nodo->linea = linea;
   return nodo;
 }
 
-Nodo* Crear_nodo_input(void){
+Nodo* Crear_nodo_input(int linea){
   Nodo* nodo = malloc(sizeof(Nodo));
   nodo->tipo = NODO_INPUT;
+  nodo->linea = linea;
   return nodo;
 }
 
 
-Nodo* Crear_nodo_func_def(char* nombre, Tipo_simbolo* tipos_param, char param[][50], Tipo_simbolo tipo_salida, char param_salida[50], int num_param, Nodo* bloque){
+Nodo* Crear_nodo_func_def(char* nombre, Tipo_simbolo* tipos_param, char param[][50], Tipo_simbolo tipo_salida, char param_salida[50], int num_param, Nodo* bloque, int linea){
   Nodo* nodo = malloc(sizeof(Nodo));
   nodo->tipo = NODO_FUNC_DEF;
   strcpy(nodo->valor.func_def.nombre, nombre);
@@ -101,10 +111,11 @@ Nodo* Crear_nodo_func_def(char* nombre, Tipo_simbolo* tipos_param, char param[][
   nodo->valor.func_def.bloque = bloque;
   nodo->valor.func_def.entorno = malloc(sizeof(TablaSimbolos));
   nodo->valor.func_def.entorno->cantidad = 0;
+  nodo->linea = linea;
   return nodo;
 }
 
-Nodo* Crear_nodo_func_call(char* nombre, Nodo** args, int num_args){
+Nodo* Crear_nodo_func_call(char* nombre, Nodo** args, int num_args, int linea){
   Nodo* nodo = malloc(sizeof(Nodo));
   nodo->tipo = NODO_FUNC_CALL;
   strcpy(nodo->valor.func_call.nombre, nombre);
@@ -112,33 +123,37 @@ Nodo* Crear_nodo_func_call(char* nombre, Nodo** args, int num_args){
     nodo->valor.func_call.args[i] = args[i];
   }
   nodo->valor.func_call.num_args = num_args;
+  nodo->linea = linea;
   return nodo;
 }
 
-Nodo* Crear_nodo_finish(void){
+Nodo* Crear_nodo_finish(int linea){
   Nodo* nodo = malloc(sizeof(Nodo));
   nodo->tipo = NODO_FINISH;
+  nodo->linea = linea;
   return nodo;
 }
 
-Nodo* Crear_nodo_array_init(Nodo** n, int cantidad, int capacidad){
+Nodo* Crear_nodo_array_init(Nodo** n, int cantidad, int capacidad, int linea){
   Nodo* nodo = malloc(sizeof(Nodo));
   nodo->valor.array_init.cantidad = cantidad;
   nodo->valor.array_init.capacidad = capacidad;
   nodo->tipo = NODO_ARRAY_INIT; 
   nodo->valor.array_init.elementos = n;
+  nodo->linea = linea;
   return nodo;
 }
  
-Nodo* Crear_nodo_array_acceso(Nodo* base, Nodo* indice){
+Nodo* Crear_nodo_array_acceso(Nodo* base, Nodo* indice, int linea){
   Nodo* nodo = malloc(sizeof(Nodo));
   nodo->tipo = NODO_ARRAY_ACCESO; 
   nodo->valor.array_acceso.base = base;
   nodo->valor.array_acceso.indice = indice;
+  nodo->linea = linea;
   return nodo;
 }
 
-Nodo* Crear_nodo_values(Nodo* expresion, Nodo** casos, Nodo** bloques, int cantidad_casos, Nodo* caso_default){
+Nodo* Crear_nodo_values(Nodo* expresion, Nodo** casos, Nodo** bloques, int cantidad_casos, Nodo* caso_default, int linea){
   Nodo* nodo = malloc(sizeof(Nodo));
   nodo->tipo = NODO_VALUES;
   nodo->valor.values.expresion = expresion;
@@ -146,6 +161,7 @@ Nodo* Crear_nodo_values(Nodo* expresion, Nodo** casos, Nodo** bloques, int canti
   nodo->valor.values.bloques = bloques;
   nodo->valor.values.cantidad_casos = cantidad_casos;
   nodo->valor.values.caso_default = caso_default;
+  nodo->linea = linea;
   return nodo;
 }
 
@@ -289,7 +305,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                   case OP_RESTA:        ev.valor.entero = izq - der; break;
                   case OP_MUL:          ev.valor.entero = izq * der; break;
                   case OP_DIV:   
-                      if (der == 0) { printf("Error: división por cero\n"); exit(1); }
+                      if (der == 0) { printf("Error: división por cero en linea %i", nodo->valor.binario.der->linea); exit(1); }
                       ev.valor.entero = izq / der; break;
                   case OP_RESTO:        ev.valor.entero = izq % der;  break;
                   case OP_MENOR:        ev.valor.entero = izq < der;  break;
@@ -318,7 +334,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                   case OP_NO_IGUAL: ev.valor.entero = strcmp(ev_izq.valor.texto, ev_der.valor.texto);
                                   ev.tipo = ENTERO; break;
                   default:
-                                printf("Operación no definida para strings"); exit(1);
+                                printf("Linea %i: Operación no definida para strings", nodo->valor.binario.izq->linea); exit(1);
                 }
               }
             break;
@@ -361,7 +377,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
                 ev.valor.entero = strlen(arg.valor.texto);
               }
               else{
-                printf("tipo no valido");
+                printf("Linea %i: tipo no valido", nodo->linea);
                 exit(1);
               }
             } 
@@ -426,7 +442,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
               char* ruta = arg.valor.texto;
               FILE* archivo = fopen(ruta, "r");
               if(archivo == NULL){
-                printf("No se pudo abrir el archivo '%s'", ruta);
+                printf("Linea %i: No se pudo abrir el archivo '%s'", nodo->linea, ruta);
                 strcpy(ev.valor.texto, "");
                 ev.tipo = STRING;
               }
@@ -459,7 +475,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
               char* contenido = arg2.valor.texto;
               FILE* archivo = fopen(ruta, "w");
               if(archivo == NULL){
-                printf("No se pudo abrir el archivo '%s'", ruta);
+                printf("Linea %i: No se pudo abrir el archivo '%s'", nodo->linea, ruta);
                 ev.tipo = ENTERO;
                 ev.valor.entero = 0;
               }
@@ -477,7 +493,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
               char* contenido = arg2.valor.texto;
               FILE* archivo = fopen(ruta, "a");
               if(archivo == NULL){
-                printf("No se pudo abrir el archivo '%s'", ruta);
+                printf("Linea %i: No se pudo abrir el archivo '%s'", nodo->linea, ruta);
                 ev.tipo = ENTERO;
                 ev.valor.entero = 0;
               }
@@ -542,18 +558,18 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
         case NODO_ARRAY_INIT:{
           Nodo** elementos_evaluados = malloc(nodo->valor.array_init.capacidad * sizeof(Nodo*));
           for(int i = 0; i < nodo->valor.array_init.capacidad; i++){
-            elementos_evaluados[i] = Crear_nodo_num(0);
+            elementos_evaluados[i] = Crear_nodo_num(0, nodo->linea);
           }
           for (int i = 0; i < nodo->valor.array_init.cantidad; i++) {
             Evaluador ev_elem = Evaluar_expresion(nodo->valor.array_init.elementos[i], t, tf);
             if (ev_elem.tipo == ENTERO) {
-                elementos_evaluados[i] = Crear_nodo_num(ev_elem.valor.entero);
+                elementos_evaluados[i] = Crear_nodo_num(ev_elem.valor.entero, nodo->linea);
             } 
             else if (ev_elem.tipo == STRING) {
-                elementos_evaluados[i] = Crear_nodo_string(ev_elem.valor.texto);   
+                elementos_evaluados[i] = Crear_nodo_string(ev_elem.valor.texto, nodo->linea);   
             }
             else if (ev_elem.tipo == ARRAY){
-              elementos_evaluados[i] = Crear_nodo_array_init(ev_elem.valor.array.elementos, ev_elem.valor.array.cantidad, ev_elem.valor.array.capacidad);
+              elementos_evaluados[i] = Crear_nodo_array_init(ev_elem.valor.array.elementos, ev_elem.valor.array.cantidad, ev_elem.valor.array.capacidad, nodo->linea);
             } 
           }
           ev.valor.array.elementos = elementos_evaluados;
@@ -566,7 +582,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
             Evaluador indice = Evaluar_expresion(nodo->valor.array_acceso.indice, t, tf);
             
             if (indice.tipo != ENTERO) {
-                printf("Error: El indice debe ser un numero entero.\n");
+                printf("Linea %i: el indice debe ser un numero entero.", nodo->linea);
                 exit(1);
             }
             int idx = indice.valor.entero;
@@ -583,7 +599,7 @@ Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) {
             }
             else if(base.tipo == STRING){
               if(idx < 0 || idx >= strlen(base.valor.texto)){
-                  printf("Error: Indice %d fuera de rango.\n", idx);
+                  printf("Linea %i: Indice %d fuera de rango.", nodo->linea, idx);
                   exit(1);
               }
               ev.tipo = STRING;
@@ -613,7 +629,7 @@ Nodo** Obtener_referencia_array(Nodo* destino, TablaSimbolos* t, TablaFunciones*
                     while(idx >= nueva_cap) nueva_cap *= 2;
                     s->valor.array.elementos = realloc(s->valor.array.elementos, sizeof(Nodo*) * nueva_cap);
                     for(int j = s->valor.array.capacidad; j < nueva_cap; j++){
-                      s->valor.array.elementos[j] = Crear_nodo_num(0);
+                      s->valor.array.elementos[j] = Crear_nodo_num(0, destino->linea);
                     }
                     s->valor.array.capacidad = nueva_cap;
                   }
@@ -635,7 +651,7 @@ Nodo** Obtener_referencia_array(Nodo* destino, TablaSimbolos* t, TablaFunciones*
                          while(idx >= nueva_cap) nueva_cap *= 2;
                          nodo_array->valor.array_init.elementos = realloc(nodo_array->valor.array_init.elementos, sizeof(Nodo*) * nueva_cap);
                          for(int j = nodo_array->valor.array_init.capacidad; j < nueva_cap; j++){
-                            nodo_array->valor.array_init.elementos[j] = Crear_nodo_num(0);                            
+                            nodo_array->valor.array_init.elementos[j] = Crear_nodo_num(0, destino->linea);                            
                          }
                         nodo_array->valor.array_init.capacidad = nueva_cap;
                        } 
@@ -764,13 +780,13 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
                         (*ref)->tipo = NODO_NUM;
                         (*ref)->valor.entero = ev_t.valor.entero;
                     } else if (ev_t.tipo == STRING) {
-                        *ref = Crear_nodo_string(ev_t.valor.texto);
+                        *ref = Crear_nodo_string(ev_t.valor.texto, nodo->linea);
                         (*ref)->tipo = NODO_STRING;
                         strcpy((*ref)->valor.str, ev_t.valor.texto);
                     } else if (ev_t.tipo == ARRAY) {
                         *ref = Crear_nodo_array_init(ev_t.valor.array.elementos, 
                                                      ev_t.valor.array.cantidad, 
-                                                     ev_t.valor.array.capacidad);
+                                                     ev_t.valor.array.capacidad, nodo->linea);
                     }
                 } else {
                     Evaluador base_ev = Evaluar_expresion(destino->valor.array_acceso.base, t, tf);
@@ -780,7 +796,7 @@ Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf) 
                         s->valor.texto[ind_ev.valor.entero] = ev_t.valor.texto[0];
                     }
                     else{
-                      printf("error, asingacion invalida");
+                      printf("Linea %i, asingacion invalida", nodo->linea);
                       exit(1);
                     }
                 }

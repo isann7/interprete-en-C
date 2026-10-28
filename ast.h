@@ -21,6 +21,9 @@ typedef enum {
 
 typedef struct Nodo {
     Tipo_nodo tipo;
+
+    int linea; 
+
     union {
         int entero;
 
@@ -99,22 +102,22 @@ typedef struct{
   Contenido valor;
 }Evaluador;
 
-Nodo* Crear_nodo_num(int num);
-Nodo* Crear_nodo_asig(Nodo* destino, Nodo* expresion, Tipo_simbolo estricto);
-Nodo* Crear_nodo_print(Nodo* n);
-Nodo* Crear_nodo_iden(char* nombre);
-Nodo* Crear_nodo_binario(Tipo_binario b, Nodo* izquierda, Nodo* derecha);
-Nodo* Crear_nodo_bloque(void);
-Nodo* Crear_nodo_if_while(Nodo* cond, Nodo* rama_verd, Nodo* rama_falsa, Tipo_token tipo);
-Nodo* Crear_nodo_string(char* nombre);
-Nodo* Crear_nodo_not(Nodo* expresion);
-Nodo* Crear_nodo_input(void);
-Nodo* Crear_nodo_func_def(char* nombre, Tipo_simbolo* tipos_param, char param[][50], Tipo_simbolo tipo_salida, char param_salida[50], int num_param, Nodo* bloque);
-Nodo* Crear_nodo_func_call(char* nombre, Nodo** args, int num_args);
-Nodo* Crear_nodo_finish(void);
-Nodo* Crear_nodo_array_init(Nodo** n, int cantidad, int capacidad);
-Nodo* Crear_nodo_array_acceso(Nodo* base, Nodo* indice);
-Nodo* Crear_nodo_values(Nodo* expresion, Nodo** casos, Nodo** bloques, int cantidad_casos, Nodo* caso_default);
+Nodo* Crear_nodo_num(int num, int linea);
+Nodo* Crear_nodo_asig(Nodo* destino, Nodo* expresion, Tipo_simbolo estricto, int linea);
+Nodo* Crear_nodo_print(Nodo* n, int linea);
+Nodo* Crear_nodo_iden(char* nombre, int linea);
+Nodo* Crear_nodo_binario(Tipo_binario b, Nodo* izquierda, Nodo* derecha, int linea);
+Nodo* Crear_nodo_bloque(int linea);
+Nodo* Crear_nodo_if_while(Nodo* cond, Nodo* rama_verd, Nodo* rama_falsa, Tipo_token tipo, int linea);
+Nodo* Crear_nodo_string(char* nombre, int linea);
+Nodo* Crear_nodo_not(Nodo* expresion, int linea);
+Nodo* Crear_nodo_input(int linea);
+Nodo* Crear_nodo_func_def(char* nombre, Tipo_simbolo* tipos_param, char param[][50], Tipo_simbolo tipo_salida, char param_salida[50], int num_param, Nodo* bloque, int linea);
+Nodo* Crear_nodo_func_call(char* nombre, Nodo** args, int num_args, int linea);
+Nodo* Crear_nodo_finish(int linea);
+Nodo* Crear_nodo_array_init(Nodo** n, int cantidad, int capacidad, int linea);
+Nodo* Crear_nodo_array_acceso(Nodo* base, Nodo* indice, int linea);
+Nodo* Crear_nodo_values(Nodo* expresion, Nodo** casos, Nodo** bloques, int cantidad_casos, Nodo* caso_default, int linea);
 Evaluador Evaluar_expresion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf);
 Evaluador Evaluar_instruccion(Nodo* nodo, TablaSimbolos* t, TablaFunciones* tf);
 Nodo** Obtener_referencia_array(Nodo* destino, TablaSimbolos* t, TablaFunciones* tf);

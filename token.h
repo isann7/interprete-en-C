@@ -15,6 +15,7 @@ typedef struct{
     int entero;
     char frase[256];
   }valor;
+  int linea;
 }Token;
 
 void Print_token(int t); 
@@ -27,7 +28,7 @@ typedef struct {
 
 void Lexer_init(Lexer* lex, char* fuente);
 void Lexer_avanzar(Lexer* lex);
-Token Obtener_token(Lexer* lex);
+Token Obtener_token(Lexer* lex, int* linea_actual);
 
 
 #endif
